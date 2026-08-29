@@ -16,11 +16,17 @@ const LIFETIME: float = 10.0
 
 ## Whether this pickup is currently active (placed / visible).
 var active: bool = false
+## Which lane (0..3) this pickup sits on.
+var lane: int = 0
 var _life: float = 0.0
 
+func _ready() -> void:
+	add_to_group("nitro")
+
 ## Place the pickup on a lane at the player's row and arm its lifetime.
-func activate(lane: int) -> void:
-	position.x = LANE_X[clampi(lane, 0, 3)]
+func activate(new_lane: int) -> void:
+	lane = clampi(new_lane, 0, 3)
+	position.x = LANE_X[lane]
 	position.z = PICKUP_Z
 	_life = LIFETIME
 	active = true

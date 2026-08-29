@@ -42,9 +42,7 @@ func _on_area_entered(area: Area3D) -> void:
 		return
 	if area is TrafficCar:
 		GameState.game_over()
-	elif area is NitroPickup:
-		area.deactivate()
-		GameState.activate_nitro()
+	# Nitro pickup is collected in _physics_process by checking lane alignment.
 
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
@@ -76,3 +74,15 @@ func _physics_process(delta: float) -> void:
 	_body.rotation.z = -bank
 
 	move_and_slide()
+	_collect_nitro()
+
+## Collect a nitro pickup only if the player is actually on its lane.
+func _collect_nitro() -> void:
+	for node in get_tree().get_nodes_in_group("nitro"):
+		var pickup := node as NitroPickup
+		if pickup == null or not pickup.is_active():
+			continue
+		if absf(global_position.x - LANE_X[pickup.lane]) < 0.7:
+			pickup.deactivate()
+			GameState.activate_nitro()
+			return
