@@ -26,21 +26,25 @@ func activate(new_lane: int) -> void:
 	position.x = LANE_X[lane]
 	position.z = SPAWN_Z
 	active = true
-	set_physics_process(true)
+	set_process(true)
 	show()
 
 ## Return the pickup to the pool: stop processing and hide it.
 func deactivate() -> void:
 	active = false
-	set_physics_process(false)
+	set_process(false)
 	hide()
 
 ## Whether this pickup is currently active.
 func is_active() -> bool:
 	return active
 
-## Scroll the pickup with the road; recycle once it passes the player.
-func _physics_process(delta: float) -> void:
+## Scroll the pickup EXACTLY with the road (same speed/delta as the road
+## generator), so it reads as a stone lying on the road surface; recycle once it
+## passes the player.
+func _process(delta: float) -> void:
+	if not active:
+		return
 	if GameState.state != "playing":
 		return
 	position.z += GameState.speed * delta
