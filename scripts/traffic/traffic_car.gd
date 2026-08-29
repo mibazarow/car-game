@@ -89,8 +89,13 @@ func _physics_process(delta: float) -> void:
 
 	var next_z: float = position.z + speed_z * delta
 	# Anti-checkmate: a car about to enter the player's danger zone holds just
-	# above it if the zone is already full, so 3 cars can never align at once.
-	if position.z < DANGER_Z_MIN and next_z >= DANGER_Z_MIN and _count_in_danger_zone() >= MAX_IN_ZONE:
+	# above it if the zone is full OR the car would sit next to (adjacent lane)
+	# another car already in the zone. This guarantees no 2 cars in adjacent
+	# lanes can ever align at the player's row, so the player always has a free
+	# lane to dodge into — no "checkmate" even at the edge lanes.
+	var will_overfill: bool = _count_in_danger_zone() >= MAX_IN_ZONE
+	var will_pair: bool = _adjacent_occupied()
+	if position.z < DANGER_Z_MIN and next_z >= DANGER_Z_MIN and (will_overfill or will_pair):
 		position.z = DANGER_Z_MIN - 0.01
 	else:
 		position.z = next_z
@@ -111,3 +116,16 @@ func _count_in_danger_zone() -> int:
 		if c.position.z >= DANGER_Z_MIN and c.position.z <= DANGER_Z_MAX:
 			count += 1
 	return count
+
+## True if any active car already in the danger zone is in an adjacent lane to
+## this car's lane (prevents two side-by-side cars reaching the player at once).
+func _adjacent_occupied() -> bool:
+	for node in get_tree().get_nodes_in_group("traffic"):
+		var c := node as TrafficCar
+		if c == null or not c.active or c == self:
+			continue
+		if c.position.z < DANGER_Z_MIN or c.position.z > DANGER_Z_MAX:
+			continue
+		if absi(c.lane - lane) == 1:
+			return true
+	return false
