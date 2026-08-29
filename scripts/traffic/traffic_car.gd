@@ -11,6 +11,8 @@ const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 const SPAWN_Z: float = -17.0
 # Past this Z the car has passed the player and is recycled.
 const RECYCLE_Z: float = 18.0
+# Awarded once per car when it passes the player.
+const PASS_POINTS := 1
 
 ## This car's own forward driving speed (units/s), its own `w`.
 var forward_speed: float = 0.0
@@ -45,7 +47,10 @@ func is_active() -> bool:
 	return active
 
 func _physics_process(delta: float) -> void:
+	speed_z = GameState.speed - forward_speed
 	position.z += speed_z * delta
 	if position.z > RECYCLE_Z:
+		if GameState.state == "playing":
+			GameState.add_score(PASS_POINTS)
 		deactivate()
 		recycled.emit(self)

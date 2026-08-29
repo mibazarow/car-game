@@ -1,56 +1,63 @@
 extends Area3D
 class_name FleeingCar
-## Autonomous fleeing target car (visual placeholder).
+## Autonomous fleeing target car that descends the road and can be caught.
 ## Top-down view: +Y is up, world "forward" (travel direction) is -Z.
-## The car stays pinned near the top of the screen and wanders between lanes.
-## Detected via Area3D; catching it awards score and relocates the target.
+## The car drives forward (own FORWARD_SPEED) while the road scrolls faster,
+## so it descends toward the player. If it passes the player row it respawns
+## at the top. Detected via Area3D; overlapping it awards score.
 
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
-# Fixed position near the top of the screen (negative Z).
-const Z_POS: float = -13.0
-
+# Where the car spawns (top of the screen, negative Z).
+const Z_SPAWN: float = -13.0
+# Past this Z the car has escaped the player and must respawn at the top.
+const Z_PASS: float = 6.0
+# The car's own forward driving speed. Must exceed traffic speeds (3..7) so
+# the car descends slower than traffic and stays ahead of it.
+const FORWARD_SPEED: float = 9.0
 # Frame-rate-independent lateral smoothing.
 const MOVE_SMOOTH: float = 6.0
+# Lane-change interval bounds (seconds).
+const CHANGE_MIN: float = 1.2
+const CHANGE_MAX: float = 2.5
 
-# How long to wait before re-rolling a lane change.
-const CHANGE_INTERVAL_MIN: float = 1.5
-const CHANGE_INTERVAL_MAX: float = 3.5
-
-var current_lane: int = 1
+var lane: int = 1
 var _change_timer: float = 0.0
-var _change_interval: float = 2.5
+var _change_interval: float = 2.0
 
 func _ready() -> void:
-	position.x = LANE_X[current_lane]
-	position.z = Z_POS
 	add_to_group("fleeing")
+	position.x = LANE_X[lane]
+	position.z = Z_SPAWN
 
-## Relocate the target to a new random lane (different from the current one).
+## Relocate the car to the top in a random lane (any lane).
 func respawn() -> void:
-	var new_lane: int = randi_range(0, 3)
-	while new_lane == current_lane:
-		new_lane = randi_range(0, 3)
-	current_lane = new_lane
-	position.x = LANE_X[current_lane]
-	position.z = Z_POS
-	_change_timer = randf_range(CHANGE_INTERVAL_MIN, CHANGE_INTERVAL_MAX)
+	lane = randi_range(0, 3)
+	position.x = LANE_X[lane]
+	position.z = Z_SPAWN
+	_change_timer = randf_range(CHANGE_MIN, CHANGE_MAX)
 
 func _physics_process(delta: float) -> void:
-	# Keep the car pinned at the top of the screen; the world scrolls instead.
-	position.z = Z_POS
+	# Descend toward the player: world scrolls at GameState.speed, the car
+	# drives forward at FORWARD_SPEED, so net world-Z motion is (speed - w).
+	var speed_z: float = GameState.speed - FORWARD_SPEED
+	position.z += speed_z * delta
 
 	# Countdown to the next autonomous lane change.
 	_change_timer -= delta
 	if _change_timer <= 0.0:
 		# Pick a new lane different from the current one.
 		var new_lane: int = randi_range(0, 3)
-		while new_lane == current_lane:
+		while new_lane == lane:
 			new_lane = randi_range(0, 3)
-		current_lane = new_lane
-		_change_interval = randf_range(CHANGE_INTERVAL_MIN, CHANGE_INTERVAL_MAX)
+		lane = new_lane
+		_change_interval = randf_range(CHANGE_MIN, CHANGE_MAX)
 		_change_timer = _change_interval
 
 	# Smooth approach to the target lane (frame-rate independent).
-	var target_x: float = LANE_X[current_lane]
+	var target_x: float = LANE_X[lane]
 	position.x = lerp(position.x, target_x, 1.0 - exp(-MOVE_SMOOTH * delta))
+
+	# Escaped past the player: respawn at the top.
+	if position.z > Z_PASS:
+		respawn()

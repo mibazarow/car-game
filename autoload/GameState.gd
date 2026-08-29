@@ -35,14 +35,25 @@ func _register_input_actions() -> void:
 		key_d.keycode = KEY_D
 		InputMap.action_add_event("move_right", key_d)
 
+## Base forward speed used by the road scroll.
+const BASE_SPEED := 12.0
+## Points accumulated before difficulty increases by one level.
+const SCORE_PER_LEVEL := 50
+## Speed added per difficulty level.
+const SPEED_STEP := 1.0
+## Upper bound for the scroll speed.
+const SPEED_MAX := 24.0
+
 ## Forward speed used by the road scroll.
-var speed: float = 12.0
+var speed: float = BASE_SPEED
 ## Current score.
 var score: int = 0
 ## Best score seen so far (persisted).
 var best: int = 0
 ## Current game state: "menu" | "playing" | "paused" | "game_over".
 var state: String = "playing"
+## Difficulty level already applied (speed bumps consumed).
+var _level := 0
 
 
 ## Add points to the current score and notify the HUD. Keeps `best` updated.
@@ -52,7 +63,17 @@ func add_score(points: int) -> void:
 	score += points
 	if score > best:
 		best = score
+	_update_difficulty()
 	score_changed.emit()
+
+
+## Slowly raise `speed` as the score climbs, one small bump per
+## `SCORE_PER_LEVEL` points, capped at `SPEED_MAX`.
+func _update_difficulty() -> void:
+	var lvl := floori(score / float(SCORE_PER_LEVEL))
+	while lvl > _level:
+		speed = minf(speed + SPEED_STEP, SPEED_MAX)
+		_level += 1
 
 
 ## Called when the run ends (crash). Freezes play and persists the record.
@@ -70,6 +91,8 @@ func game_over() -> void:
 func reset_run() -> void:
 	score = 0
 	state = "playing"
+	speed = BASE_SPEED
+	_level = 0
 	score_changed.emit()
 
 
