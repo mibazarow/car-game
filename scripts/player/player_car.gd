@@ -76,13 +76,16 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_collect_nitro()
 
-## Collect a nitro pickup only if the player is actually on its lane.
+## Collect a nitro pickup only when it has reached the player's row AND the
+## player is on the pickup's lane (like picking a pickup up off the road).
 func _collect_nitro() -> void:
 	for node in get_tree().get_nodes_in_group("nitro"):
 		var pickup := node as NitroPickup
 		if pickup == null or not pickup.is_active():
 			continue
-		if absf(global_position.x - LANE_X[pickup.lane]) < 0.7:
+		var on_row: bool = absf(pickup.position.z - global_position.z) < 2.0
+		var on_lane: bool = absf(global_position.x - LANE_X[pickup.lane]) < 0.7
+		if on_row and on_lane:
 			pickup.deactivate()
 			GameState.activate_nitro()
 			return
