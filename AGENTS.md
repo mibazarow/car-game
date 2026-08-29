@@ -22,6 +22,19 @@ and only then move on. Subagents do the actual work; you coordinate and review.
 
 ---
 
+## Godot documentation (HARD RULE — consult it for EVERY feature)
+
+- The official Godot 4.7 docs are stored **locally** in `godot-docs/`:
+  - `godot-docs/tutorials/` — manuals/tutorials (2D, 3D, physics, scripting, shaders, etc.).
+  - `godot-docs/classes/` — full class reference (`class_*.rst`, one file per class).
+- **This is a HARD, non-negotiable rule: when implementing ANY feature, ALWAYS consult `godot-docs/` first.** Every task that touches Godot API — functions, methods, properties, signals, nodes, classes, built-in types, settings, editor/import options — must start from the docs, not from memory.
+- Do **not** rely on memory or guesswork for any Godot API. If you are not 100% certain of the exact name, signature, semantics, or availability of an API, look it up in `godot-docs/` **before** writing code (search with grep over `*.rst`).
+- Checking the docs is **not optional** and **not a fallback**: do it **before** implementing, not after hitting an error.
+- Apply this to yourself **and** to subagents: every subagent prompt **must** explicitly instruct the subagent to consult `godot-docs/` before using any Godot API, and to **cite the specific `.rst` file** it used as the source for each API decision. A subagent that cannot cite the doc source for an API it used has not done its job.
+- Files are `.rst` (reStructuredText) — read them as plain text; headings/directives are readable as-is.
+
+---
+
 ## process.md — development context (MANDATORY, kept across sessions)
 
 - **`process.md`** is the compact development-context file for this project. It lets a **new session** (which starts with no memory) quickly understand what has been done and what to do next.
