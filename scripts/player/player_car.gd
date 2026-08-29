@@ -51,20 +51,18 @@ func _on_area_entered(area: Area3D) -> void:
 	if GameState.state != "playing":
 		return
 	if area is TrafficCar:
-		if GameState.nitro_time > 0.0:
-			return  # invincible during the nitro boost (surges past traffic)
 		GameState.game_over()
 	# Nitro pickup is collected in _physics_process by checking lane alignment.
 
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
 		return
-	# During nitro the car surges forward (up) by NITRO_FORWARD; otherwise it
-	# returns to PLAYER_Z. Eases smoothly both ways.
-	var target_z: float = PLAYER_Z
-	if GameState.nitro_time > 0.0:
-		target_z = PLAYER_Z - NITRO_FORWARD
-	global_position.z = lerp(global_position.z, target_z, 1.0 - exp(-NITRO_LERP * delta))
+	# Collision root stays pinned at the player's row; only the visual Body
+	# surges forward during nitro. So the boost reads clearly but the car never
+	# phases through traffic (and doesn't crash from the surge).
+	global_position.z = PLAYER_Z
+	var body_target: float = -NITRO_FORWARD if GameState.nitro_time > 0.0 else 0.0
+	_body.position.z = lerp(_body.position.z, body_target, 1.0 - exp(-NITRO_LERP * delta))
 
 	var old_x: float = global_position.x
 	var target_x: float = LANE_X[target_lane]

@@ -48,7 +48,7 @@ const SPEED_STEP := 0.2
 ## Upper bound for the scroll speed.
 const SPEED_MAX := 20.0
 ## Spawn a nitro pickup after this many overtaken traffic cars.
-const NITRO_EVERY := 15
+const NITRO_EVERY := 100
 ## How long (seconds) nitro stays active once collected.
 const NITRO_DURATION := 2.0
 
