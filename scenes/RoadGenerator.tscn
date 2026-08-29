@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b9x2r4k7m3p1q8"]
+
+[ext_resource type="Script" path="res://scripts/road/road_generator.gd" id="1_roadgen"]
+
+[node name="RoadGenerator" type="Node3D"]
+script = ExtResource("1_roadgen")

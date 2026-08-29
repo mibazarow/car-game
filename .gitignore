@@ -11,3 +11,6 @@ LOCAL_SERVER_INTERFACE/
 # Large binary model assets
 *.glb
 *.blend
+
+# Godot import cache
+.godot/

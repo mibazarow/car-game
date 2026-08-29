@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3 uid="uid://c1m4n7p2q9r3s5"]
+
+[ext_resource type="PackedScene" path="res://scenes/RoadGenerator.tscn" id="1_roadgen"]
+[ext_resource type="PackedScene" path="res://scenes/PlayerCar.tscn" id="2_player"]
+
+[node name="Main" type="Node3D"]
+
+[node name="Camera" type="Camera3D" parent="."]
+projection = 1
+size = 11.0
+position = Vector3(0, 25, -2)
+rotation = Vector3(-1.5708, 0, 0)
+far = 200.0
+near = 0.1
+current = true
+
+[node name="Light" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 20, 0)
+rotation = Vector3(-1.5708, 0, 0)
+light_energy = 1.0
+
+[node name="RoadGenerator" parent="." instance=ExtResource("1_roadgen")]
+
+[node name="PlayerCar" parent="." instance=ExtResource("2_player")]
