@@ -7,6 +7,12 @@ const SEGMENT_LENGTH := 6.5        # Length of one tile along Z.
 const ROAD_HALF_WIDTH := 4.0       # Full road width = 8.0, centered on X=0.
 const COVERAGE_MIN := 18.0         # Near/bottom bound (past camera).
 const COVERAGE_MAX := -18.0        # Far/front bound (top of screen).
+# Ground (grass) extends beyond the shoulders so the road sits on a surface.
+const GROUND_HALF_WIDTH := 15.0
+# Shoulder strip width on each side of the asphalt (emergency lane / curb base).
+const SHOULDER_WIDTH := 1.0
+# Curb (kerb) strip width at the very outer edge.
+const CURB_WIDTH := 0.25
 
 # X positions of the lane divider lines (between the 4 lanes).
 const LANE_DIVIDERS := [-2.0, 0.0, 2.0]
@@ -14,7 +20,10 @@ const LANE_DIVIDERS := [-2.0, 0.0, 2.0]
 const EDGE_LINES := [-3.5, 3.5]
 
 # Colors (opaque, flat, no textures).
+const GROUND_COLOR := Color(0.17, 0.27, 0.15)   # grass around the road
 const ASPHALT_COLOR := Color(0.13, 0.13, 0.14)
+const SHOULDER_COLOR := Color(0.42, 0.42, 0.45) # concrete shoulders
+const CURB_COLOR := Color(0.62, 0.62, 0.64)     # light curb
 const DIVIDER_COLOR := Color(0.9, 0.9, 0.9)
 const EDGE_COLOR := Color(0.95, 0.9, 0.2)
 
@@ -43,10 +52,68 @@ func _build_segment() -> Node3D:
 	var segment := Node3D.new()
 	segment.name = "Segment"
 
+	_ground(segment)
 	_asphalt_slab(segment)
+	_shoulders(segment)
+	_curbs(segment)
 	_lane_dividers(segment)
 	_edge_lines(segment)
 	return segment
+
+
+## Wide grass plane below the road, so the road sits on a surface.
+func _ground(parent: Node3D) -> void:
+	var ground := PlaneMesh.new()
+	ground.size = Vector2(GROUND_HALF_WIDTH * 2.0, _segment_length)
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = GROUND_COLOR
+	mat.roughness = 1.0
+
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = ground
+	mesh.material_override = mat
+	mesh.position = Vector3(0.0, -0.02, 0.0)
+	mesh.name = "Ground"
+	parent.add_child(mesh)
+
+
+## Concrete shoulder strips on each side of the asphalt.
+func _shoulders(parent: Node3D) -> void:
+	for s in [-1.0, 1.0]:
+		var x: float = s * (ROAD_HALF_WIDTH + SHOULDER_WIDTH * 0.5)
+		var shoulder := PlaneMesh.new()
+		shoulder.size = Vector2(SHOULDER_WIDTH, _segment_length)
+
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = SHOULDER_COLOR
+		mat.roughness = 1.0
+
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = shoulder
+		mesh.material_override = mat
+		mesh.position = Vector3(x, 0.0, 0.0)
+		mesh.name = "Shoulder_" + str(x)
+		parent.add_child(mesh)
+
+
+## Thin curb (kerb) strips at the very outer edges.
+func _curbs(parent: Node3D) -> void:
+	for s in [-1.0, 1.0]:
+		var x: float = s * (ROAD_HALF_WIDTH + SHOULDER_WIDTH)
+		var curb := PlaneMesh.new()
+		curb.size = Vector2(CURB_WIDTH, _segment_length)
+
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = CURB_COLOR
+		mat.roughness = 1.0
+
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = curb
+		mesh.material_override = mat
+		mesh.position = Vector3(x, 0.01, 0.0)
+		mesh.name = "Curb_" + str(x)
+		parent.add_child(mesh)
 
 
 func _asphalt_slab(parent: Node3D) -> void:
