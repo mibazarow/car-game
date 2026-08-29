@@ -66,6 +66,12 @@
 - **MenuScreen** (`scripts/menu.gd`+`scenes/MenuScreen.tscn`, layer 2): «PATROL RUSH», рекорд, кнопка «Играть»/Enter → start_game. Показывается при state=="menu".
 - **PauseScreen** (`scripts/pause.gd`+`scenes/PauseScreen.tscn`, layer 3): «ПАУЗА», Продолжить/Заново, Enter → resume. Показывается при state=="paused".
 - Полный цикл: MENU → PLAYING ⇄ PAUSED → GAME_OVER → restart/menu. UI без Container-нод (ручные якоря, см. грабли Godot 4.7).
+
+### Нитро-система (приз)
+- **Спавн:** каждые `NITRO_EVERY=15` проеханных машин → сигнал `nitro_should_spawn` → `NitroSpawner` кладёт **жёлтый круг** (`NitroPickup`, Area3D layer 8, CylinderMesh unshaded) на случайную полосу, скроллится с дорогой.
+- **Подбор:** `DetectArea` игрока mask 6→14 (добавлен layer 8); наезд → `activate_nitro()` (2с).
+- **Эффект:** во время нитро синяя цель **спускается к игроку** (`fleeing_car`: `minf(z+8*dt, NITRO_CATCH_Z=2)`), по истечении плавно возвращается наверх. Трафик НЕ ускоряется (GameState.speed не меняется). Догнать/поймать всё ещё нельзя (z=2 выше зоны DetectArea ~2.7..5.3).
+- `GameState`: `nitro_time` (дренится в `_process`, только при playing), `passed_cars` (сбрасывается в reset_run).
 - **Рост сложности (`GameState`):** `speed` +`SPEED_STEP` за каждые `SCORE_PER_LEVEL` очков (сейчас **+0.2 каждые 500 очков**, потолок `SPEED_MAX=20`) — очень плавно, через `_update_difficulty()` в `add_score`. `reset_run()` сбрасывает speed/уровень. Трафик пересчитывает `speed_z` каждый кадр → ускорение применяется к уже живым машинам.
 - Все Godot-API сверены с `godot-docs/` (класс-референсы цитированы субагентами: @GlobalScope, SceneTree, Node, CharacterBody3D, Area3D).
 

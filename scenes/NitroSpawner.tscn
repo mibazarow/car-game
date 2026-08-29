@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://n1t0rsp0w0n3r1"]
+
+[ext_resource type="Script" path="res://scripts/nitro_spawner.gd" id="1_spawner"]
+
+[node name="NitroSpawner" type="Node3D"]
+script = ExtResource("1_spawner")

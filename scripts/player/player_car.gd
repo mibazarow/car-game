@@ -42,6 +42,9 @@ func _on_area_entered(area: Area3D) -> void:
 		return
 	if area is TrafficCar:
 		GameState.game_over()
+	elif area is NitroPickup:
+		area.deactivate()
+		GameState.activate_nitro()
 
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":

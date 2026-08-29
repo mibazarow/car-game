@@ -5,6 +5,9 @@ extends Node
 ## Emitted whenever `score` changes (so the HUD can refresh).
 signal score_changed
 
+## Emitted when enough traffic cars have been overtaken to spawn a nitro pickup.
+signal nitro_should_spawn
+
 ## Path (in user://) where the best score is persisted between runs.
 const BEST_SAVE_PATH := "user://best.cfg"
 
@@ -44,6 +47,10 @@ const SCORE_PER_LEVEL := 500
 const SPEED_STEP := 0.2
 ## Upper bound for the scroll speed.
 const SPEED_MAX := 20.0
+## Spawn a nitro pickup after this many overtaken traffic cars.
+const NITRO_EVERY := 15
+## How long (seconds) nitro stays active once collected.
+const NITRO_DURATION := 2.0
 
 ## Forward speed used by the road scroll.
 var speed: float = BASE_SPEED
@@ -55,6 +62,10 @@ var best: int = 0
 var state: String = "menu"
 ## Difficulty level already applied (speed bumps consumed).
 var _level := 0
+## Number of traffic cars overtaken since the last nitro pickup spawn.
+var passed_cars := 0
+## Seconds of nitro remaining (drained in `_process`; enemy approaches while > 0).
+var nitro_time := 0.0
 
 
 ## Add points to the current score and notify the HUD. Keeps `best` updated.
@@ -66,6 +77,27 @@ func add_score(points: int) -> void:
 		best = score
 	_update_difficulty()
 	score_changed.emit()
+
+
+## Called by traffic when a car is overtaken: score it, count it, and emit a
+## nitro-spawn signal once `NITRO_EVERY` cars have passed.
+func on_car_passed() -> void:
+	if state != "playing":
+		return
+	add_score(1)
+	passed_cars += 1
+	if passed_cars >= NITRO_EVERY:
+		passed_cars = 0
+		nitro_should_spawn.emit()
+
+## Start (or refresh) the nitro timer for `NITRO_DURATION` seconds.
+func activate_nitro() -> void:
+	nitro_time = NITRO_DURATION
+
+## Drain the nitro timer while playing so the fleeing car approaches.
+func _process(delta: float) -> void:
+	if state == "playing":
+		nitro_time = maxf(0.0, nitro_time - delta)
 
 
 ## Slowly raise `speed` as the score climbs, one small bump per
@@ -94,6 +126,8 @@ func reset_run() -> void:
 	state = "playing"
 	speed = BASE_SPEED
 	_level = 0
+	passed_cars = 0
+	nitro_time = 0.0
 	score_changed.emit()
 
 ## Start a run from the menu: reset and enter the "playing" state.

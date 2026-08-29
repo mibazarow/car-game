@@ -11,8 +11,6 @@ const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 const SPAWN_Z: float = -17.0
 # Past this Z the car has passed the player and is recycled.
 const RECYCLE_Z: float = 18.0
-# Awarded once per car when it passes the player.
-const PASS_POINTS := 1
 ## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
 const FOLLOW_DIST: float = 6.0
 ## X distance (units) beyond which two cars are considered different lanes.
@@ -84,6 +82,6 @@ func _physics_process(delta: float) -> void:
 	position.z += speed_z * delta
 	if position.z > RECYCLE_Z:
 		if GameState.state == "playing":
-			GameState.add_score(PASS_POINTS)
+			GameState.on_car_passed()
 		deactivate()
 		recycled.emit(self)

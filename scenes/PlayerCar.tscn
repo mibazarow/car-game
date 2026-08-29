@@ -23,7 +23,7 @@ collision_mask = 0
 [node name="DetectArea" type="Area3D" parent="."]
 monitoring = true
 collision_layer = 0
-collision_mask = 6
+collision_mask = 14
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DetectArea"]
 shape = SubResource("Shape_detect")

@@ -11,6 +11,12 @@ const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 # NOTE: ortho camera `size` = full diameter, so visible Z is roughly -18..+6;
 # -14 sits near the top of the new, larger view.
 const Z_POS: float = -14.0
+# During nitro the target descends toward the player but stops short of the
+# player's DetectArea (z=2.0 is above the ~2.7..5.3 overlap window), so it can
+# never be caught.
+const NITRO_CATCH_Z: float = 2.0
+# How fast (units/s) the target descends toward the player during nitro.
+const NITRO_DESCEND_SPEED: float = 8.0
 # How far ahead / behind (in Z) we scan for traffic in a given lane.
 const DANGER_AHEAD: float = 4.0
 const DANGER_BEHIND: float = 1.5
@@ -34,8 +40,12 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
 		return
-	# Stay pinned near the top of the screen.
-	position.z = Z_POS
+	# During nitro the target descends toward the player; otherwise it returns
+	# smoothly to the top of the screen. It never reaches the player.
+	if GameState.nitro_time > 0.0:
+		position.z = minf(position.z + NITRO_DESCEND_SPEED * delta, NITRO_CATCH_Z)
+	else:
+		position.z = lerp(position.z, Z_POS, 1.0 - exp(-2.0 * delta))
 
 	# Countdown to the next autonomous lane change.
 	_change_timer -= delta
