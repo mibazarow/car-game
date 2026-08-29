@@ -7,8 +7,10 @@ class_name FleeingCar
 
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
-# Fixed world Z: the car stays pinned near the top of the screen.
-const Z_POS: float = -13.0
+# Fixed world Z: the car stays pinned near the top of the visible screen.
+# NOTE: ortho camera `size` = full diameter, so visible Z is roughly -10..+6;
+# -13 was OFF-SCREEN (above the view), so this must stay within ~[-9, -5].
+const Z_POS: float = -8.0
 # How far ahead / behind (in Z) we scan for traffic in a given lane.
 const DANGER_AHEAD: float = 4.0
 const DANGER_BEHIND: float = 1.5
