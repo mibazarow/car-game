@@ -39,11 +39,11 @@ func _register_input_actions() -> void:
 ## Base forward speed used by the road scroll.
 const BASE_SPEED := 12.0
 ## Points accumulated before difficulty increases by one level.
-const SCORE_PER_LEVEL := 250
+const SCORE_PER_LEVEL := 500
 ## Speed added per difficulty level.
-const SPEED_STEP := 0.4
+const SPEED_STEP := 0.2
 ## Upper bound for the scroll speed.
-const SPEED_MAX := 24.0
+const SPEED_MAX := 20.0
 
 ## Forward speed used by the road scroll.
 var speed: float = BASE_SPEED
