@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://d7t3v9k2m6p4w1"]
+[gd_scene load_steps=4 format=3 uid="uid://d7t3v9k2m6p4w2"]
 
 [ext_resource type="Script" path="res://scripts/traffic/traffic_car.gd" id="1_traffic"]
 
@@ -13,8 +13,10 @@ roughness = 0.5
 [sub_resource type="BoxShape3D" id="Shape_car"]
 size = Vector3(1.1, 0.9, 2.0)
 
-[node name="TrafficCar" type="Node3D"]
+[node name="TrafficCar" type="Area3D"]
 script = ExtResource("1_traffic")
+collision_layer = 2
+collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_car")

@@ -1,7 +1,7 @@
-extends Node3D
+extends Area3D
 class_name TrafficCar
 ## Placeholder traffic car (enemy). A purple box that scrolls toward the
-## player along the endless 4-lane road. No collisions / game-over yet.
+## player along the endless 4-lane road. Detected via Area3D for game-over.
 ## Top-down view: +Y is up, world "forward" (travel) is -Z, road scrolls +Z.
 
 # Lane center X positions (lanes 0..3, left -> right).
@@ -44,7 +44,7 @@ signal recycled(car: TrafficCar)
 func is_active() -> bool:
 	return active
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	position.z += speed_z * delta
 	if position.z > RECYCLE_Z:
 		deactivate()

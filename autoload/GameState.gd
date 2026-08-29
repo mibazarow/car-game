@@ -2,8 +2,15 @@ extends Node
 ## Global game state for "Patrol Rush". Registers input actions and holds
 ## lightweight runtime variables (speed, score, best, current state).
 
+## Emitted whenever `score` changes (so the HUD can refresh).
+signal score_changed
+
+## Path (in user://) where the best score is persisted between runs.
+const BEST_SAVE_PATH := "user://best.cfg"
+
 func _ready() -> void:
 	_register_input_actions()
+	_load_best()
 
 func _register_input_actions() -> void:
 	# move_left: Left arrow / A
@@ -32,7 +39,47 @@ func _register_input_actions() -> void:
 var speed: float = 12.0
 ## Current score.
 var score: int = 0
-## Best score seen so far.
+## Best score seen so far (persisted).
 var best: int = 0
 ## Current game state: "menu" | "playing" | "paused" | "game_over".
 var state: String = "playing"
+
+
+## Add points to the current score and notify the HUD. Keeps `best` updated.
+func add_score(points: int) -> void:
+	if state != "playing":
+		return
+	score += points
+	if score > best:
+		best = score
+	score_changed.emit()
+
+
+## Called when the run ends (crash). Freezes play and persists the record.
+func game_over() -> void:
+	if state == "game_over":
+		return
+	state = "game_over"
+	if score > best:
+		best = score
+	_save_best()
+	score_changed.emit()
+
+
+## Reset the score and state for a fresh run.
+func reset_run() -> void:
+	score = 0
+	state = "playing"
+	score_changed.emit()
+
+
+func _load_best() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(BEST_SAVE_PATH) == OK:
+		best = int(cfg.get_value("score", "best", 0))
+
+
+func _save_best() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("score", "best", best)
+	cfg.save(BEST_SAVE_PATH)

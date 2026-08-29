@@ -1,7 +1,9 @@
-extends Node3D
+extends Area3D
+class_name FleeingCar
 ## Autonomous fleeing target car (visual placeholder).
 ## Top-down view: +Y is up, world "forward" (travel direction) is -Z.
 ## The car stays pinned near the top of the screen and wanders between lanes.
+## Detected via Area3D; catching it awards score and relocates the target.
 
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
@@ -22,8 +24,19 @@ var _change_interval: float = 2.5
 func _ready() -> void:
 	position.x = LANE_X[current_lane]
 	position.z = Z_POS
+	add_to_group("fleeing")
 
-func _process(delta: float) -> void:
+## Relocate the target to a new random lane (different from the current one).
+func respawn() -> void:
+	var new_lane: int = randi_range(0, 3)
+	while new_lane == current_lane:
+		new_lane = randi_range(0, 3)
+	current_lane = new_lane
+	position.x = LANE_X[current_lane]
+	position.z = Z_POS
+	_change_timer = randf_range(CHANGE_INTERVAL_MIN, CHANGE_INTERVAL_MAX)
+
+func _physics_process(delta: float) -> void:
 	# Keep the car pinned at the top of the screen; the world scrolls instead.
 	position.z = Z_POS
 

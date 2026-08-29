@@ -19,10 +19,13 @@ const MOVE_SMOOTH: float = 8.0
 var current_lane: int = 1
 var target_lane: int = 1
 var _body: Node3D
+var _detect: Area3D
 var _prev_x: float
 
 func _ready() -> void:
 	_body = get_node("Body")
+	_detect = get_node("DetectArea")
+	_detect.area_entered.connect(_on_area_entered)
 	# Start centered in the middle lane.
 	var start_x: float = LANE_X[current_lane]
 	global_position.x = start_x
@@ -34,7 +37,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("move_right"):
 		target_lane = clamp(target_lane + 1, 0, 3)
 
+func _on_area_entered(area: Area3D) -> void:
+	if GameState.state != "playing":
+		return
+	if area is TrafficCar:
+		GameState.game_over()
+	elif area.is_in_group("fleeing"):
+		GameState.add_score(100)
+		var f: Node = get_tree().get_first_node_in_group("fleeing")
+		if f != null:
+			f.respawn()
+
 func _physics_process(delta: float) -> void:
+	if GameState.state != "playing":
+		return
 	# Keep the car fixed at the bottom of the screen; the world scrolls instead.
 	global_position.z = PLAYER_Z
 

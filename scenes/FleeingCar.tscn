@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://c7f3m2n9p4q6r1t8"]
+[gd_scene load_steps=5 format=3 uid="uid://c7f3m2n9p4q6r1t9"]
 
 [ext_resource type="Script" path="res://scripts/fleeing/fleeing_car.gd" id="1_fleeing"]
 
@@ -13,8 +13,10 @@ roughness = 0.4
 [sub_resource type="BoxShape3D" id="Shape_body"]
 size = Vector3(1.1, 0.9, 2.0)
 
-[node name="FleeingCar" type="Node3D"]
+[node name="FleeingCar" type="Area3D"]
 script = ExtResource("1_fleeing")
+collision_layer = 4
+collision_mask = 0
 
 [node name="Mesh" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_body")
