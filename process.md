@@ -68,7 +68,8 @@
 - Полный цикл: MENU → PLAYING ⇄ PAUSED → GAME_OVER → restart/menu. UI без Container-нод (ручные якоря, см. грабли Godot 4.7).
 
 ### Нитро-система (приз)
-- **Спавн:** каждые `NITRO_EVERY=15` проеханных машин → сигнал `nitro_should_spawn` → `NitroSpawner` кладёт **жёлтый круг** (`NitroPickup`, Area3D layer 8, CylinderMesh unshaded) на случайную полосу, скроллится с дорогой.
+- **Спавн:** каждые `NITRO_EVERY=15` проеханных машин → сигнал `nitro_should_spawn` → `NitroSpawner` кладёт **жёлтый круг** (`NitroPickup`, Area3D layer 8, CylinderMesh unshaded) на случайную полосу.
+- **Статичный приз:** `NitroPickup` НЕ скроллится — стоит на полосе на уровне игрока (`PICKUP_Z=4.0`), подбирается перестроением; автоисчезает через `LIFETIME=10с`, если не собрали.
 - **Подбор:** `DetectArea` игрока mask 6→14 (добавлен layer 8); наезд → `activate_nitro()` (2с).
 - **Эффект:** во время нитро синяя цель **спускается к игроку** (`fleeing_car`: `minf(z+8*dt, NITRO_CATCH_Z=2)`), по истечении плавно возвращается наверх. Трафик НЕ ускоряется (GameState.speed не меняется). Догнать/поймать всё ещё нельзя (z=2 выше зоны DetectArea ~2.7..5.3).
 - `GameState`: `nitro_time` (дренится в `_process`, только при playing), `passed_cars` (сбрасывается в reset_run).
