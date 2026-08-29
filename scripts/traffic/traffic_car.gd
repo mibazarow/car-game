@@ -40,13 +40,13 @@ func activate(new_lane: int, new_forward_speed: float) -> void:
 	position.x = LANE_X[lane]
 	position.z = SPAWN_Z
 	active = true
-	set_process(true)
+	set_physics_process(true)
 	show()
 
 ## Return this car to the pool: stop processing and hide it.
 func deactivate() -> void:
 	active = false
-	set_process(false)
+	set_physics_process(false)
 	hide()
 
 signal recycled(car: TrafficCar)
@@ -79,6 +79,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
+		return
+	if not active:
 		return
 	speed_z = GameState.speed - forward_speed
 	var ahead := _car_ahead()
