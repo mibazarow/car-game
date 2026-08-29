@@ -1,25 +1,24 @@
 extends Area3D
 class_name FleeingCar
-## Autonomous fleeing target car that descends the road and can be caught.
+## Autonomous fleeing target car pinned near the top of the screen.
 ## Top-down view: +Y is up, world "forward" (travel direction) is -Z.
-## The car drives forward (own FORWARD_SPEED) while the road scrolls faster,
-## so it descends toward the player. If it passes the player row it respawns
-## at the top. Detected via Area3D; overlapping it awards score.
+## The car never descends and can never be caught; it only wanders lanes and
+## dodges oncoming traffic by moving into a free lane. Detected via Area3D.
 
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
-# Where the car spawns (top of the screen, negative Z).
-const Z_SPAWN: float = -13.0
-# Past this Z the car has escaped the player and must respawn at the top.
-const Z_PASS: float = 6.0
-# The car's own forward driving speed. Must exceed traffic speeds (3..7) so
-# the car descends slower than traffic and stays ahead of it.
-const FORWARD_SPEED: float = 9.0
+# Fixed world Z: the car stays pinned near the top of the screen.
+const Z_POS: float = -13.0
+# How far ahead / behind (in Z) we scan for traffic in a given lane.
+const DANGER_AHEAD: float = 4.0
+const DANGER_BEHIND: float = 1.5
 # Frame-rate-independent lateral smoothing.
 const MOVE_SMOOTH: float = 6.0
 # Lane-change interval bounds (seconds).
 const CHANGE_MIN: float = 1.2
 const CHANGE_MAX: float = 2.5
+# Tolerance (world units) for treating a traffic car as in the same lane.
+const LANE_TOLERANCE: float = 1.0
 
 var lane: int = 1
 var _change_timer: float = 0.0
@@ -28,29 +27,23 @@ var _change_interval: float = 2.0
 func _ready() -> void:
 	add_to_group("fleeing")
 	position.x = LANE_X[lane]
-	position.z = Z_SPAWN
-
-## Relocate the car to the top in a random lane (any lane).
-func respawn() -> void:
-	lane = randi_range(0, 3)
-	position.x = LANE_X[lane]
-	position.z = Z_SPAWN
-	_change_timer = randf_range(CHANGE_MIN, CHANGE_MAX)
+	position.z = Z_POS
 
 func _physics_process(delta: float) -> void:
-	# Descend toward the player: world scrolls at GameState.speed, the car
-	# drives forward at FORWARD_SPEED, so net world-Z motion is (speed - w).
-	var speed_z: float = GameState.speed - FORWARD_SPEED
-	position.z += speed_z * delta
+	# Stay pinned near the top of the screen.
+	position.z = Z_POS
 
 	# Countdown to the next autonomous lane change.
 	_change_timer -= delta
-	if _change_timer <= 0.0:
-		# Pick a new lane different from the current one.
-		var new_lane: int = randi_range(0, 3)
-		while new_lane == lane:
-			new_lane = randi_range(0, 3)
-		lane = new_lane
+
+	# Reactive dodge: if the current lane is blocked right now, immediately
+	# move to a safe lane regardless of the timer.
+	if _lane_blocked(lane):
+		lane = _pick_safe_lane()
+		_change_timer = _change_interval
+	elif _change_timer <= 0.0:
+		# Pick a new safe lane on the autonomous timer.
+		lane = _pick_safe_lane()
 		_change_interval = randf_range(CHANGE_MIN, CHANGE_MAX)
 		_change_timer = _change_interval
 
@@ -58,6 +51,30 @@ func _physics_process(delta: float) -> void:
 	var target_x: float = LANE_X[lane]
 	position.x = lerp(position.x, target_x, 1.0 - exp(-MOVE_SMOOTH * delta))
 
-	# Escaped past the player: respawn at the top.
-	if position.z > Z_PASS:
-		respawn()
+## Return a lane index (0..3) that is not blocked by traffic. Falls back to the
+## current lane if every lane is blocked, or keeps the current lane if it is
+## already safe.
+func _pick_safe_lane() -> int:
+	var safe: Array[int] = []
+	for i: int in 4:
+		if not _lane_blocked(i):
+			safe.append(i)
+	if safe.is_empty():
+		return lane
+	if not _lane_blocked(lane):
+		return lane
+	return safe[randi_range(0, safe.size() - 1)]
+
+## Whether a traffic car currently occupies the given lane within the danger
+## window ahead of / behind this car.
+func _lane_blocked(lane_idx: int) -> bool:
+	for n in get_tree().get_nodes_in_group("traffic"):
+		var car: TrafficCar = n as TrafficCar
+		if car == null or not car.is_active():
+			continue
+		if absf(n.position.x - LANE_X[lane_idx]) > LANE_TOLERANCE:
+			continue
+		var dz: float = n.position.z - position.z
+		if dz > -DANGER_AHEAD and dz < DANGER_BEHIND:
+			return true
+	return false

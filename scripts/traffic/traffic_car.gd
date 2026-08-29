@@ -46,6 +46,9 @@ signal recycled(car: TrafficCar)
 func is_active() -> bool:
 	return active
 
+func _ready() -> void:
+	add_to_group("traffic")
+
 func _physics_process(delta: float) -> void:
 	speed_z = GameState.speed - forward_speed
 	position.z += speed_z * delta

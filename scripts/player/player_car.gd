@@ -7,10 +7,6 @@ extends CharacterBody3D
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 const PLAYER_Z: float = 4.0
 
-# Catch reward and the cooldown after a catch (prevents instant re-scoring).
-const CATCH_POINTS := 10
-const CATCH_COOLDOWN := 1.5
-
 # Bank (roll.z) limits and ramp speeds.
 const BANK_MAX: float = 0.42          # ~24 degrees
 const BANK_RISE: float = 10.0         # rad/s while moving laterally
@@ -25,7 +21,6 @@ var target_lane: int = 1
 var _body: Node3D
 var _detect: Area3D
 var _prev_x: float
-var _catch_cooldown: float = 0.0
 
 func _ready() -> void:
 	_body = get_node("Body")
@@ -47,19 +42,10 @@ func _on_area_entered(area: Area3D) -> void:
 		return
 	if area is TrafficCar:
 		GameState.game_over()
-	elif area.is_in_group("fleeing"):
-		if _catch_cooldown > 0.0:
-			return
-		GameState.add_score(CATCH_POINTS)
-		var f: Node = get_tree().get_first_node_in_group("fleeing")
-		if f != null:
-			f.respawn()
-		_catch_cooldown = CATCH_COOLDOWN
 
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
 		return
-	_catch_cooldown = maxf(0.0, _catch_cooldown - delta)
 	# Keep the car fixed at the bottom of the screen; the world scrolls instead.
 	global_position.z = PLAYER_Z
 
