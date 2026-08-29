@@ -52,7 +52,7 @@ var score: int = 0
 ## Best score seen so far (persisted).
 var best: int = 0
 ## Current game state: "menu" | "playing" | "paused" | "game_over".
-var state: String = "playing"
+var state: String = "menu"
 ## Difficulty level already applied (speed bumps consumed).
 var _level := 0
 
@@ -95,6 +95,27 @@ func reset_run() -> void:
 	speed = BASE_SPEED
 	_level = 0
 	score_changed.emit()
+
+## Start a run from the menu: reset and enter the "playing" state.
+func start_game() -> void:
+	reset_run()
+
+## Toggle between "playing" and "paused".
+func toggle_pause() -> void:
+	if state == "playing":
+		state = "paused"
+	elif state == "paused":
+		state = "playing"
+
+## Resume from the pause screen back to "playing".
+func resume() -> void:
+	if state == "paused":
+		state = "playing"
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_P or event.keycode == KEY_ESCAPE:
+			toggle_pause()
 
 
 func _load_best() -> void:

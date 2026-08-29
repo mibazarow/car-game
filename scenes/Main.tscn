@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://c1m4n7p2q9r3s5"]
+[gd_scene load_steps=11 format=3 uid="uid://c1m4n7p2q9r3s5"]
 
 [ext_resource type="PackedScene" path="res://scenes/RoadGenerator.tscn" id="1_roadgen"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerCar.tscn" id="2_player"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" path="res://scenes/FleeingCar.tscn" id="4_fleeing"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="5_hud"]
 [ext_resource type="PackedScene" path="res://scenes/GameOverScreen.tscn" id="6_over"]
+[ext_resource type="PackedScene" path="res://scenes/MenuScreen.tscn" id="7_menu"]
+[ext_resource type="PackedScene" path="res://scenes/PauseScreen.tscn" id="8_pause"]
 
 [node name="Main" type="Node3D"]
 
@@ -34,3 +36,7 @@ light_energy = 1.0
 [node name="HUD" parent="." instance=ExtResource("5_hud")]
 
 [node name="GameOverScreen" parent="." instance=ExtResource("6_over")]
+
+[node name="MenuScreen" parent="." instance=ExtResource("7_menu")]
+
+[node name="PauseScreen" parent="." instance=ExtResource("8_pause")]

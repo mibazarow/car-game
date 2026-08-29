@@ -99,6 +99,8 @@ func _edge_lines(parent: Node3D) -> void:
 
 
 func _process(delta: float) -> void:
+	if GameState.state != "playing":
+		return
 	var step := GameState.speed * delta
 	for child in get_children():
 		child.position.z += step

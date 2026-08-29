@@ -33,6 +33,8 @@ func _ready() -> void:
 
 ## Spawn one traffic car from the pool (or create a new instance).
 func _spawn() -> void:
+	if GameState.state != "playing":
+		return
 	if _active_count >= MAX_TRAFFIC:
 		return
 

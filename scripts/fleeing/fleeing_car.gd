@@ -32,6 +32,8 @@ func _ready() -> void:
 	position.z = Z_POS
 
 func _physics_process(delta: float) -> void:
+	if GameState.state != "playing":
+		return
 	# Stay pinned near the top of the screen.
 	position.z = Z_POS
 

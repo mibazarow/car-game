@@ -73,6 +73,8 @@ func _ready() -> void:
 	add_to_group("traffic")
 
 func _physics_process(delta: float) -> void:
+	if GameState.state != "playing":
+		return
 	speed_z = GameState.speed - forward_speed
 	var ahead := _car_ahead()
 	if ahead != null:
