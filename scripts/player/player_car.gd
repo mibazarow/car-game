@@ -16,6 +16,13 @@ const BANK_K: float = 0.13            # lateral velocity -> bank target coeffici
 # Frame-rate-independent lateral smoothing.
 const MOVE_SMOOTH: float = 8.0
 
+# Nitro: the player surges FORWARD (up the screen) by this many world units
+# (~1/3 of the ~24-unit visible height) over the ~2s nitro duration.
+const NITRO_FORWARD: float = 8.0
+# Smoothing factor for the forward surge / return (1 - exp(-k*dt)); k≈1.8
+# reaches ~97% of the way in ~2s.
+const NITRO_LERP: float = 1.8
+
 var current_lane: int = 1
 var target_lane: int = 1
 var _body: Node3D
@@ -41,14 +48,20 @@ func _on_area_entered(area: Area3D) -> void:
 	if GameState.state != "playing":
 		return
 	if area is TrafficCar:
+		if GameState.nitro_time > 0.0:
+			return  # invincible during the nitro boost (surges past traffic)
 		GameState.game_over()
 	# Nitro pickup is collected in _physics_process by checking lane alignment.
 
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
 		return
-	# Keep the car fixed at the bottom of the screen; the world scrolls instead.
-	global_position.z = PLAYER_Z
+	# During nitro the car surges forward (up) by NITRO_FORWARD; otherwise it
+	# returns to PLAYER_Z. Eases smoothly both ways.
+	var target_z: float = PLAYER_Z
+	if GameState.nitro_time > 0.0:
+		target_z = PLAYER_Z - NITRO_FORWARD
+	global_position.z = lerp(global_position.z, target_z, 1.0 - exp(-NITRO_LERP * delta))
 
 	var old_x: float = global_position.x
 	var target_x: float = LANE_X[target_lane]
