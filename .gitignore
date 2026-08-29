@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Tool dirs
+.playwright-mcp/
+
+# Server 3D pipeline: contains secrets (SSH password, HF token) and large model assets.
+# NEVER commit secrets — keep this excluded.
+LOCAL_SERVER_INTERFACE/
+
+# Large binary model assets
+*.glb
+*.blend
