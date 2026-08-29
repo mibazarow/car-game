@@ -15,6 +15,13 @@ const RECYCLE_Z: float = 18.0
 const FOLLOW_DIST: float = 6.0
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
+# Danger zone = the player's row where crashes happen (player DetectArea ~z 2.7..5.3).
+const DANGER_Z_MIN: float = 2.5
+const DANGER_Z_MAX: float = 5.5
+# At most this many cars may be in the danger zone at once. With 2 cars the
+# player always has a free lane to dodge to, so a 3-wide "checkmate" wall can
+# never form.
+const MAX_IN_ZONE := 2
 
 ## This car's own forward driving speed (units/s), its own `w`.
 var forward_speed: float = 0.0
@@ -79,9 +86,28 @@ func _physics_process(delta: float) -> void:
 		var gap := position.z - ahead.position.z
 		if gap < FOLLOW_DIST:
 			speed_z = minf(speed_z, ahead.speed_z)
-	position.z += speed_z * delta
+
+	var next_z: float = position.z + speed_z * delta
+	# Anti-checkmate: a car about to enter the player's danger zone holds just
+	# above it if the zone is already full, so 3 cars can never align at once.
+	if position.z < DANGER_Z_MIN and next_z >= DANGER_Z_MIN and _count_in_danger_zone() >= MAX_IN_ZONE:
+		position.z = DANGER_Z_MIN - 0.01
+	else:
+		position.z = next_z
+
 	if position.z > RECYCLE_Z:
 		if GameState.state == "playing":
 			GameState.on_car_passed()
 		deactivate()
 		recycled.emit(self)
+
+## Number of active traffic cars currently inside the player's danger zone.
+func _count_in_danger_zone() -> int:
+	var count := 0
+	for node in get_tree().get_nodes_in_group("traffic"):
+		var c := node as TrafficCar
+		if c == null or not c.active:
+			continue
+		if c.position.z >= DANGER_Z_MIN and c.position.z <= DANGER_Z_MAX:
+			count += 1
+	return count
