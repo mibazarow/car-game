@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://e8w4x1n5q7r2b9"]
+
+[ext_resource type="Script" path="res://scripts/traffic/traffic_spawner.gd" id="1_spawner"]
+
+[node name="TrafficSpawner" type="Node3D"]
+script = ExtResource("1_spawner")

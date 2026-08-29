@@ -1,7 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://c1m4n7p2q9r3s5"]
+[gd_scene load_steps=7 format=3 uid="uid://c1m4n7p2q9r3s5"]
 
 [ext_resource type="PackedScene" path="res://scenes/RoadGenerator.tscn" id="1_roadgen"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerCar.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/TrafficSpawner.tscn" id="3_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/FleeingCar.tscn" id="4_fleeing"]
 
 [node name="Main" type="Node3D"]
 
@@ -22,3 +24,7 @@ light_energy = 1.0
 [node name="RoadGenerator" parent="." instance=ExtResource("1_roadgen")]
 
 [node name="PlayerCar" parent="." instance=ExtResource("2_player")]
+
+[node name="TrafficSpawner" parent="." instance=ExtResource("3_spawner")]
+
+[node name="FleeingCar" parent="." instance=ExtResource("4_fleeing")]
