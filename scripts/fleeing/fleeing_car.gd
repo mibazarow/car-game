@@ -6,7 +6,7 @@ extends Node3D
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 # Fixed position near the top of the screen (negative Z).
-const Z_POS: float = -10.0
+const Z_POS: float = -13.0
 
 # Frame-rate-independent lateral smoothing.
 const MOVE_SMOOTH: float = 6.0

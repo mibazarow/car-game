@@ -5,7 +5,7 @@ extends CharacterBody3D
 
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
-const PLAYER_Z: float = 8.0
+const PLAYER_Z: float = 4.0
 
 # Bank (roll.z) limits and ramp speeds.
 const BANK_MAX: float = 0.42          # ~24 degrees

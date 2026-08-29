@@ -9,7 +9,7 @@
 
 [node name="Camera" type="Camera3D" parent="."]
 projection = 1
-size = 11.0
+size = 16.0
 position = Vector3(0, 25, -2)
 rotation = Vector3(-1.5708, 0, 0)
 far = 200.0

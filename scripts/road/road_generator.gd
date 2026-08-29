@@ -5,8 +5,8 @@ extends Node3D
 
 const SEGMENT_LENGTH := 6.5        # Length of one tile along Z.
 const ROAD_HALF_WIDTH := 4.0       # Full road width = 8.0, centered on X=0.
-const COVERAGE_MIN := 13.0         # Near/bottom bound (past camera).
-const COVERAGE_MAX := -13.0        # Far/front bound (top of screen).
+const COVERAGE_MIN := 18.0         # Near/bottom bound (past camera).
+const COVERAGE_MAX := -18.0        # Far/front bound (top of screen).
 
 # X positions of the lane divider lines (between the 4 lanes).
 const LANE_DIVIDERS := [-2.0, 0.0, 2.0]

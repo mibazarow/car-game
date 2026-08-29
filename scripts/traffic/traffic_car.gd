@@ -8,9 +8,9 @@ class_name TrafficCar
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 
 # Where a freshly spawned car enters (top of screen, negative Z).
-const SPAWN_Z: float = -12.0
+const SPAWN_Z: float = -17.0
 # Past this Z the car has passed the player and is recycled.
-const RECYCLE_Z: float = 14.0
+const RECYCLE_Z: float = 18.0
 
 ## This car's own forward driving speed (units/s), its own `w`.
 var forward_speed: float = 0.0

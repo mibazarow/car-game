@@ -39,9 +39,10 @@ func _spawn() -> void:
 		car = _scene.instantiate()
 		_pool.append(car)
 		add_child(car)
+		# Connect the recycle signal once per instance (avoid duplicates on reuse).
+		(car as TrafficCar).recycled.connect(_on_car_recycled)
 
 	var traffic_car := car as TrafficCar
-	traffic_car.recycled.connect(_on_car_recycled)
 	traffic_car.activate(randi_range(LANE_MIN, LANE_MAX), randf_range(FORWARD_SPEED_MIN, FORWARD_SPEED_MAX))
 	_active_count += 1
 
@@ -57,5 +58,5 @@ func _on_timeout() -> void:
 	_spawn()
 
 ## Called by TrafficCar when it recedes past the player.
-func _on_car_recycled() -> void:
+func _on_car_recycled(_car: TrafficCar) -> void:
 	_active_count = max(0, _active_count - 1)
