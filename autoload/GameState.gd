@@ -11,6 +11,7 @@ const BEST_SAVE_PATH := "user://best.cfg"
 func _ready() -> void:
 	_register_input_actions()
 	_load_best()
+	_size_window()
 
 func _register_input_actions() -> void:
 	# move_left: Left arrow / A
@@ -106,3 +107,18 @@ func _save_best() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("score", "best", best)
 	cfg.save(BEST_SAVE_PATH)
+
+
+## Auto-size the window to ~75% of the screen height with a portrait aspect
+## and center it on the screen. Never errors out the game if a call fails.
+func _size_window() -> void:
+	var screen := DisplayServer.screen_get_size()
+	if screen == Vector2i.ZERO:
+		return
+	var screen_pos := DisplayServer.screen_get_position()
+	var win_h := int(screen.y * 0.75)
+	var win_w := int(win_h * 0.5625)
+	var win_size := Vector2i(win_w, win_h)
+	var pos := screen_pos + (screen - win_size) / 2
+	DisplayServer.window_set_size(win_size)
+	DisplayServer.window_set_position(pos)
