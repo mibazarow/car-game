@@ -13,6 +13,10 @@ const SPAWN_Z: float = -17.0
 const RECYCLE_Z: float = 18.0
 # Awarded once per car when it passes the player.
 const PASS_POINTS := 1
+## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
+const FOLLOW_DIST: float = 6.0
+## X distance (units) beyond which two cars are considered different lanes.
+const LANE_TOLERANCE: float = 1.0
 
 ## This car's own forward driving speed (units/s), its own `w`.
 var forward_speed: float = 0.0
@@ -46,11 +50,35 @@ signal recycled(car: TrafficCar)
 func is_active() -> bool:
 	return active
 
+## Nearest active car in the same lane that is ahead (smaller Z). Else null.
+func _car_ahead() -> TrafficCar:
+	var nearest: TrafficCar = null
+	var nearest_z := -3.4028235e38
+	for node in get_tree().get_nodes_in_group("traffic"):
+		var c := node as TrafficCar
+		if c == null or !c.active:
+			continue
+		if c == self:
+			continue
+		if c.lane != lane and absf(c.position.x - position.x) > LANE_TOLERANCE:
+			continue
+		if c.position.z >= position.z:
+			continue
+		if c.position.z > nearest_z:
+			nearest = c
+			nearest_z = c.position.z
+	return nearest
+
 func _ready() -> void:
 	add_to_group("traffic")
 
 func _physics_process(delta: float) -> void:
 	speed_z = GameState.speed - forward_speed
+	var ahead := _car_ahead()
+	if ahead != null:
+		var gap := position.z - ahead.position.z
+		if gap < FOLLOW_DIST:
+			speed_z = minf(speed_z, ahead.speed_z)
 	position.z += speed_z * delta
 	if position.z > RECYCLE_Z:
 		if GameState.state == "playing":

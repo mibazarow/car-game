@@ -15,6 +15,8 @@ const LANE_MAX := 3
 ## Per-car forward speed range (units/s).
 const FORWARD_SPEED_MIN: float = 3.0
 const FORWARD_SPEED_MAX: float = 7.0
+## Don't spawn a car within this Z-distance of another car in the same lane.
+const SPAWN_SAFE_DIST: float = 6.0
 
 var _timer: Timer
 ## Pool of traffic instances (active or idle).
@@ -42,9 +44,28 @@ func _spawn() -> void:
 		# Connect the recycle signal once per instance (avoid duplicates on reuse).
 		(car as TrafficCar).recycled.connect(_on_car_recycled)
 
+	# Pick the first of up to 4 random lanes that is clear at the spawn point.
+	var chosen_lane := -1
+	for _i in 4:
+		var cand := randi_range(LANE_MIN, LANE_MAX)
+		if _lane_clear_at_spawn(cand):
+			chosen_lane = cand
+			break
+	if chosen_lane < 0:
+		return
+
 	var traffic_car := car as TrafficCar
-	traffic_car.activate(randi_range(LANE_MIN, LANE_MAX), randf_range(FORWARD_SPEED_MIN, FORWARD_SPEED_MAX))
+	traffic_car.activate(chosen_lane, randf_range(FORWARD_SPEED_MIN, FORWARD_SPEED_MAX))
 	_active_count += 1
+
+## True if no active car is within SPAWN_SAFE_DIST of the spawn Z in this lane.
+func _lane_clear_at_spawn(lane_idx: int) -> bool:
+	for node in get_tree().get_nodes_in_group("traffic"):
+		var c := node as TrafficCar
+		if c != null and c.active and c.lane == lane_idx:
+			if absf(c.position.z - TrafficCar.SPAWN_Z) < SPAWN_SAFE_DIST:
+				return false
+	return true
 
 ## Grab an inactive car from the pool, or return null if none is free.
 func _get_free_car() -> Node3D:
