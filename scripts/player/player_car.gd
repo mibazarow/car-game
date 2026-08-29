@@ -12,6 +12,9 @@ const BANK_MAX: float = 0.42          # ~24 degrees
 const BANK_RISE: float = 10.0         # rad/s while moving laterally
 const BANK_FALL: float = 6.0          # rad/s decay toward 0
 const BANK_K: float = 0.13            # lateral velocity -> bank target coefficient
+# Yaw (rotation.y): the nose turns toward the lane-change direction.
+const YAW_MAX: float = 0.6            # ~34 degrees
+const YAW_K: float = 0.09             # lateral velocity -> yaw target coefficient
 
 # Frame-rate-independent lateral smoothing.
 const MOVE_SMOOTH: float = 8.0
@@ -85,6 +88,16 @@ func _physics_process(delta: float) -> void:
 
 	# Moving right (lateral_velocity > 0) -> right side dips: negate the roll.
 	_body.rotation.z = -bank
+
+	# Yaw: the nose turns toward the lane-change direction (moving right -> turn
+	# right = negative rotation.y). Ramps with the bank, decays to straight.
+	var yaw_target: float = clamp(lateral_velocity * YAW_K, -YAW_MAX, YAW_MAX)
+	var yaw: float = _body.rotation.y
+	if abs(lateral_velocity) > 0.01:
+		yaw = lerp(yaw, -yaw_target, 1.0 - exp(-BANK_RISE * delta))
+	else:
+		yaw = lerp(yaw, 0.0, 1.0 - exp(-BANK_FALL * delta))
+	_body.rotation.y = yaw
 
 	move_and_slide()
 	_collect_nitro()
