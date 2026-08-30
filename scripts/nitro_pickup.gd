@@ -8,7 +8,7 @@ class_name NitroPickup
 # Lane center X positions (lanes 0..3, left -> right).
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 # Where a freshly spawned pickup enters (top of screen, negative Z).
-const SPAWN_Z: float = -17.0
+const SPAWN_Z: float = -25.0
 # Past this Z the pickup has scrolled past the player and is recycled.
 const RECYCLE_Z: float = 6.0
 

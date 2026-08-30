@@ -8,15 +8,15 @@ class_name TrafficCar
 const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 
 # Where a freshly spawned car enters (top of screen, negative Z).
-const SPAWN_Z: float = -17.0
+const SPAWN_Z: float = -25.0
 # Past this Z the car has passed the player and is recycled.
 const RECYCLE_Z: float = 18.0
 ## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
 const FOLLOW_DIST: float = 6.0
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
-# Danger zone = the player's row where crashes happen (player DetectArea ~z 2.7..5.3).
-const DANGER_Z_MIN: float = 2.5
+# Threat band around the player's row [0.5..5.5] (includes approaching cars). With at most 2 cars, and never in adjacent lanes, the player always has a free lane to dodge into — no "checkmate" wall.
+const DANGER_Z_MIN: float = 0.5
 const DANGER_Z_MAX: float = 5.5
 # At most this many cars may be in the danger zone at once. With 2 cars the
 # player always has a free lane to dodge to, so a 3-wide "checkmate" wall can
@@ -114,7 +114,6 @@ func _physics_process(delta: float) -> void:
 		return
 	if not active:
 		return
-	speed_z = GameState.speed - forward_speed
 	var ahead := _car_ahead()
 	if ahead != null:
 		var gap := position.z - ahead.position.z
