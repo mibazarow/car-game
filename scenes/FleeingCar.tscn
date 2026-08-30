@@ -1,27 +1,18 @@
-[gd_scene load_steps=5 format=3 uid="uid://c7f3m2n9p4q6r1t9"]
+[gd_scene load_steps=6 format=3 uid="uid://c7f3m2n9p4q6r1t9"]
 
 [ext_resource type="Script" path="res://scripts/fleeing/fleeing_car.gd" id="1_fleeing"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_body"]
-size = Vector3(1.5, 1.0, 2.8)
-
-[sub_resource type="StandardMaterial3D" id="Mat_blue"]
-shading_mode = 0
-albedo_color = Color(0.2, 0.6, 1.0, 1)
-metalness = 0.0
-roughness = 0.4
+[ext_resource type="PackedScene" path="res://MODELS/2_city_car_beige_.glb" id="2_flee"]
 
 [sub_resource type="BoxShape3D" id="Shape_body"]
-size = Vector3(1.5, 1.0, 2.8)
+size = Vector3(1.25, 1.0, 2.6)
 
 [node name="FleeingCar" type="Area3D"]
 script = ExtResource("1_fleeing")
 collision_layer = 4
 collision_mask = 0
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_body")
-surface_material_override/0 = SubResource("Mat_blue")
+[node name="CarModel" type="Node3D" parent="." instance=ExtResource("2_flee")]
+transform = Transform3D(-1.294, 0, 0, 0, 1.294, 0, 0, 0, -1.294, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("Shape_body")

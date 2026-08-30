@@ -32,10 +32,26 @@ var lane: int = 0
 ## Whether the car is currently in use (spawned / active).
 var active: bool = false
 
+## Model variant indexes (0..5) that are trucks; trucks drive slower.
+const TRUCK_INDEX_START: int = 4
+## Model/collider variants in order: Beige, Blue, Yellow, Green, TruckRed, TruckWhite.
+var _models: Array[Node3D]
+var _colliders: Array[CollisionShape3D]
+
 ## Activate this car on a given lane with a given forward speed.
 func activate(new_lane: int, new_forward_speed: float) -> void:
+	var vi: int = randi_range(0, _models.size() - 1)
+	for m in _models:
+		m.visible = false
+	for c in _colliders:
+		c.disabled = true
+	_models[vi].visible = true
+	_colliders[vi].disabled = false
+	if vi >= TRUCK_INDEX_START:
+		forward_speed = minf(new_forward_speed, randf_range(1.5, 3.5))
+	else:
+		forward_speed = new_forward_speed
 	lane = clamp(new_lane, 0, 3)
-	forward_speed = new_forward_speed
 	speed_z = GameState.speed - forward_speed
 	position.x = LANE_X[lane]
 	position.z = SPAWN_Z
@@ -75,6 +91,22 @@ func _car_ahead() -> TrafficCar:
 	return nearest
 
 func _ready() -> void:
+	_models = [
+		get_node("Models/Beige"),
+		get_node("Models/Blue"),
+		get_node("Models/Yellow"),
+		get_node("Models/Green"),
+		get_node("Models/TruckRed"),
+		get_node("Models/TruckWhite"),
+	]
+	_colliders = [
+		get_node("CollBeige"),
+		get_node("CollBlue"),
+		get_node("CollYellow"),
+		get_node("CollGreen"),
+		get_node("CollTruckRed"),
+		get_node("CollTruckWhite"),
+	]
 	add_to_group("traffic")
 
 func _physics_process(delta: float) -> void:

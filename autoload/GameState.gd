@@ -15,6 +15,7 @@ func _ready() -> void:
 	_register_input_actions()
 	_load_best()
 	_size_window()
+	start_game()
 
 func _register_input_actions() -> void:
 	# move_left: Left arrow / A
