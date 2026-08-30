@@ -64,9 +64,9 @@ func _register_input_actions() -> void:
 ## Base forward speed used by the road scroll.
 const BASE_SPEED := 12.0
 ## Points accumulated before difficulty increases by one level.
-const SCORE_PER_LEVEL := 500
+const SCORE_PER_LEVEL := 100
 ## Speed added per difficulty level.
-const SPEED_STEP := 0.2
+const SPEED_STEP := 0.3
 ## Upper bound for the scroll speed.
 const SPEED_MAX := 20.0
 ## Spawn a nitro pickup after this many overtaken traffic cars.

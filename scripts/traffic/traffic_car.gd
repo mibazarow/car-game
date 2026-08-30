@@ -13,6 +13,8 @@ const SPAWN_Z: float = -25.0
 const RECYCLE_Z: float = 18.0
 ## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
 const FOLLOW_DIST: float = 6.0
+## Uniform acceleration rate for traffic cars (units/s^2) — smooth speed changes.
+const ACCEL := 3.0
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
 # Threat band around the player's row [0.5..5.5] (includes approaching cars). With at most 2 cars, and never in adjacent lanes, the player always has a free lane to dodge into — no "checkmate" wall.
@@ -114,11 +116,14 @@ func _physics_process(delta: float) -> void:
 		return
 	if not active:
 		return
+	var target: float = GameState.speed - forward_speed
 	var ahead := _car_ahead()
 	if ahead != null:
 		var gap := position.z - ahead.position.z
 		if gap < FOLLOW_DIST:
-			speed_z = minf(speed_z, ahead.speed_z)
+			target = minf(target, ahead.speed_z)
+	var dv: float = clampf(target - speed_z, -ACCEL * delta, ACCEL * delta)
+	speed_z += dv
 
 	var next_z: float = position.z + speed_z * delta
 	# Anti-checkmate: a car about to enter the player's danger zone holds just
