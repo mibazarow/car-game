@@ -117,12 +117,19 @@ func _curbs(parent: Node3D) -> void:
 
 
 func _asphalt_slab(parent: Node3D) -> void:
+	const TILES_ACROSS := 6.0
+	var tex := load("res://MODELS/asfalt_2.png")
+
 	var slab := PlaneMesh.new()
 	slab.size = Vector2(ROAD_HALF_WIDTH * 2.0, _segment_length)
 
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = ASPHALT_COLOR
+	mat.albedo_texture = tex
 	mat.roughness = 1.0
+
+	var tile_world := (ROAD_HALF_WIDTH * 2.0) / TILES_ACROSS
+	var tiles_along := _segment_length / tile_world
+	mat.uv1_scale = Vector3(TILES_ACROSS, tiles_along, 1.0)
 
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = slab
