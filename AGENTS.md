@@ -70,12 +70,23 @@ For any non-trivial piece of work, follow this loop:
 
 ---
 
-## Task-slicing rules
+## Task-slicing rules (STRICT — strong decomposition)
 
-- Prefer many small tasks over one giant task. Each subagent gets one clear job.
+- **Slice aggressively into the smallest meaningful units.** Each subagent gets ONE narrow, single-concern job. A task should be small enough to describe in a few sentences.
+- **NEVER hand a subagent a giant monolithic task.** If a task spans multiple files / multiple concerns / multiple "and then..." steps, it is too big — split it into separate tasks (one concern / one file each).
 - Each prompt must be self-contained: file paths, exact requirements, acceptance criteria, return value.
 - If a task depends on another subagent's output, do it sequentially and pass the result along in the next prompt.
 - Keep prompts unambiguous so verification is trivial ("done" = tests pass / file builds / render looks right).
+- Independent, non-overlapping tasks may run in parallel; tasks that touch the same file must be sequential.
+
+---
+
+## Three-attempt rule (anti-loop, mandatory)
+
+- A subagent must **never spin on an error.** If it cannot accomplish its task after **three distinct attempts** (three different approaches/tries), it must **STOP, report the failure back to the orchestrator, and hand control back** — including exactly what it tried and why it failed.
+- Do NOT keep retrying the same approach, and do NOT burn many more turns on the same problem.
+- The orchestrator (me) decides next steps: send targeted feedback, re-delegate with a narrower scope, or handle it myself. The subagent waits for instructions.
+- Apply this both to your own orchestration loop and to every subagent prompt: write an explicit line in each prompt — *"If you cannot complete this in 3 attempts, stop and report back rather than continuing to retry."*
 
 ---
 
