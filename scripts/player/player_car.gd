@@ -98,6 +98,8 @@ func _physics_process(delta: float) -> void:
 		yaw = lerp(yaw, 0.0, 1.0 - exp(-BANK_FALL * delta))
 	_yaw_cur = yaw
 	_body.rotation.y = yaw
+	_detect.rotation.z = _body.rotation.z
+	_detect.rotation.y = _body.rotation.y
 
 	_collect_nitro()
 
