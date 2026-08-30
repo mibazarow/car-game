@@ -1,4 +1,4 @@
-extends CharacterBody3D
+extends Area3D
 ## Placeholder police car: lane-based horizontal movement with cosmetic banking.
 ## Top-down view: +Y is up, world "forward" (travel direction) is -Z.
 ## The car stays fixed at PLAYER_Z; the world scrolls. Player only moves along X.
@@ -31,9 +31,10 @@ var target_lane: int = 1
 var _body: Node3D
 var _detect: Area3D
 var _prev_x: float
+var _yaw_cur: float = 0.0
 
 func _ready() -> void:
-	_body = get_node("Body")
+	_body = get_node("CarModel")
 	_detect = get_node("DetectArea")
 	_detect.area_entered.connect(_on_area_entered)
 	# Start centered in the middle lane.
@@ -90,14 +91,14 @@ func _physics_process(delta: float) -> void:
 	# Yaw: the nose turns toward the lane-change direction (moving right -> turn
 	# right = negative rotation.y). Ramps with the bank, decays to straight.
 	var yaw_target: float = clamp(lateral_velocity * YAW_K, -YAW_MAX, YAW_MAX)
-	var yaw: float = _body.rotation.y
+	var yaw: float = _yaw_cur
 	if abs(lateral_velocity) > 0.01:
 		yaw = lerp(yaw, -yaw_target, 1.0 - exp(-BANK_RISE * delta))
 	else:
 		yaw = lerp(yaw, 0.0, 1.0 - exp(-BANK_FALL * delta))
+	_yaw_cur = yaw
 	_body.rotation.y = yaw
 
-	move_and_slide()
 	_collect_nitro()
 
 ## Collect a nitro pickup only when it has reached the player's row AND the
