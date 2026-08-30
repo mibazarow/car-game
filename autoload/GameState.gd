@@ -11,11 +11,32 @@ signal nitro_should_spawn
 ## Path (in user://) where the best score is persisted between runs.
 const BEST_SAVE_PATH := "user://best.cfg"
 
+var _engine: AudioStreamPlayer
+var _nitro: AudioStreamPlayer
+
 func _ready() -> void:
 	_register_input_actions()
 	_load_best()
 	_size_window()
-	start_game()
+	_setup_audio()
+
+func _setup_audio() -> void:
+	_engine = AudioStreamPlayer.new()
+	_engine.stream = load("res://MODELS/engine.wav")
+	_engine.volume_db = linear_to_db(0.7)
+	_engine.finished.connect(func() -> void: _engine.play())
+	add_child(_engine)
+
+	_nitro = AudioStreamPlayer.new()
+	_nitro.stream = load("res://MODELS/nitro.wav")
+	add_child(_nitro)
+
+func _update_engine() -> void:
+	if state == "playing" or state == "paused":
+		if !_engine.is_playing():
+			_engine.play()
+	else:
+		_engine.stop()
 
 func _register_input_actions() -> void:
 	# move_left: Left arrow / A
@@ -94,11 +115,15 @@ func on_car_passed() -> void:
 ## Start (or refresh) the nitro timer for `NITRO_DURATION` seconds.
 func activate_nitro() -> void:
 	nitro_time = NITRO_DURATION
+	if _nitro != null:
+		_nitro.stop()
+		_nitro.play()
 
 ## Drain the nitro timer while playing so the fleeing car approaches.
 func _process(delta: float) -> void:
 	if state == "playing":
 		nitro_time = maxf(0.0, nitro_time - delta)
+	_update_engine()
 
 
 ## Slowly raise `speed` as the score climbs, one small bump per
