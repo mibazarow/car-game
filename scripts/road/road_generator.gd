@@ -139,20 +139,27 @@ func _asphalt_slab(parent: Node3D) -> void:
 
 
 func _lane_dividers(parent: Node3D) -> void:
+	const LINE_WIDTH := 0.125
+	const DASHES_PER_SEGMENT := 3
+	const DASH_LEN := 0.9
+	var gap := (_segment_length - DASHES_PER_SEGMENT * DASH_LEN) / DASHES_PER_SEGMENT
+	var period := DASH_LEN + gap
 	for x in LANE_DIVIDERS:
-		var line := PlaneMesh.new()
-		line.size = Vector2(0.25, _segment_length)
+		for i in DASHES_PER_SEGMENT:
+			var z := -_segment_length * 0.5 + (i + 0.5) * period
+			var line := PlaneMesh.new()
+			line.size = Vector2(LINE_WIDTH, DASH_LEN)
 
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = DIVIDER_COLOR
-		mat.roughness = 1.0
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = DIVIDER_COLOR
+			mat.roughness = 1.0
 
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = line
-		mesh.material_override = mat
-		mesh.position = Vector3(x, 0.01, 0.0)
-		mesh.name = "Divider_" + str(x)
-		parent.add_child(mesh)
+			var mesh := MeshInstance3D.new()
+			mesh.mesh = line
+			mesh.material_override = mat
+			mesh.position = Vector3(x, 0.01, z)
+			mesh.name = "Divider_" + str(x) + "_" + str(i)
+			parent.add_child(mesh)
 
 
 func _edge_lines(parent: Node3D) -> void:
