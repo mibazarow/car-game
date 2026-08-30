@@ -69,6 +69,8 @@ const SCORE_PER_LEVEL := 100
 const SPEED_STEP := 0.3
 ## Upper bound for the scroll speed.
 const SPEED_MAX := 20.0
+## How quickly `speed` ramps toward the difficulty target (smooth, no jumps).
+const SPEED_RAMP := 1.5
 ## Spawn a nitro pickup after this many overtaken traffic cars.
 const NITRO_EVERY := 15
 ## How long (seconds) nitro stays active once collected.
@@ -76,6 +78,8 @@ const NITRO_DURATION := 2.0
 
 ## Forward speed used by the road scroll.
 var speed: float = BASE_SPEED
+## The difficulty speed the current `speed` smoothly approaches.
+var speed_target: float = BASE_SPEED
 ## Current score.
 var score: int = 0
 ## Best score seen so far (persisted).
@@ -121,6 +125,7 @@ func activate_nitro() -> void:
 
 ## Drain the nitro timer while playing so the fleeing car approaches.
 func _process(delta: float) -> void:
+	speed = lerp(speed, speed_target, 1.0 - exp(-SPEED_RAMP * delta))
 	if state == "playing":
 		nitro_time = maxf(0.0, nitro_time - delta)
 	_update_engine()
@@ -131,7 +136,7 @@ func _process(delta: float) -> void:
 func _update_difficulty() -> void:
 	var lvl := floori(score / float(SCORE_PER_LEVEL))
 	while lvl > _level:
-		speed = minf(speed + SPEED_STEP, SPEED_MAX)
+		speed_target = minf(speed_target + SPEED_STEP, SPEED_MAX)
 		_level += 1
 
 
@@ -151,6 +156,7 @@ func reset_run() -> void:
 	score = 0
 	state = "playing"
 	speed = BASE_SPEED
+	speed_target = BASE_SPEED
 	_level = 0
 	passed_cars = 0
 	nitro_time = 0.0

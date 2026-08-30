@@ -14,7 +14,7 @@ const RECYCLE_Z: float = 18.0
 ## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
 const FOLLOW_DIST: float = 6.0
 ## Uniform acceleration rate for traffic cars (units/s^2) — smooth speed changes.
-const ACCEL := 3.0
+const ACCEL := 2.0
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
 # Threat band around the player's row [0.5..5.5] (includes approaching cars). With at most 2 cars, and never in adjacent lanes, the player always has a free lane to dodge into — no "checkmate" wall.
