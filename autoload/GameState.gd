@@ -61,6 +61,12 @@ func _register_input_actions() -> void:
 		key_d.keycode = KEY_D
 		InputMap.action_add_event("move_right", key_d)
 
+	if !InputMap.has_action("use_nitro"):
+		InputMap.add_action("use_nitro")
+		var key_space := InputEventKey.new()
+		key_space.keycode = KEY_SPACE
+		InputMap.action_add_event("use_nitro", key_space)
+
 ## Base forward speed used by the road scroll.
 const BASE_SPEED := 12.0
 ## Points accumulated before difficulty increases by one level.
@@ -92,6 +98,8 @@ var _level := 0
 var passed_cars := 0
 ## Seconds of nitro remaining (drained in `_process`; enemy approaches while > 0).
 var nitro_time := 0.0
+## Whether one nitro pickup is stored in reserve (max one).
+var nitro_ready: bool = false
 
 
 ## Add points to the current score and notify the HUD. Keeps `best` updated.
@@ -116,8 +124,15 @@ func on_car_passed() -> void:
 		passed_cars = 0
 		nitro_should_spawn.emit()
 
+## Store a collected nitro pickup into the reserve (max one).
+func store_nitro() -> void:
+	nitro_ready = true
+
 ## Start (or refresh) the nitro timer for `NITRO_DURATION` seconds.
 func activate_nitro() -> void:
+	if not nitro_ready:
+		return
+	nitro_ready = false
 	nitro_time = NITRO_DURATION
 	if _nitro != null:
 		_nitro.stop()
@@ -160,6 +175,7 @@ func reset_run() -> void:
 	_level = 0
 	passed_cars = 0
 	nitro_time = 0.0
+	nitro_ready = false
 	score_changed.emit()
 
 ## Start a run from the menu: reset and enter the "playing" state.
@@ -179,6 +195,8 @@ func resume() -> void:
 		state = "playing"
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("use_nitro"):
+		activate_nitro()
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_P or event.keycode == KEY_ESCAPE:
 			toggle_pause()

@@ -113,6 +113,8 @@ func _collect_nitro() -> void:
 		var on_row: bool = absf(pickup.position.z - global_position.z) < 2.0
 		var on_lane: bool = absf(global_position.x - LANE_X[pickup.lane]) < 0.7
 		if on_row and on_lane:
+			if GameState.nitro_ready:
+				continue
 			pickup.deactivate()
-			GameState.activate_nitro()
+			GameState.store_nitro()
 			return
