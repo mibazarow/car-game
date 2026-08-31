@@ -105,40 +105,26 @@ func _physics_process(delta: float) -> void:
 	_detect.rotation.y = _body.rotation.y
 	_detect.position.z = _body.position.z
 
-	_collect_nitro()
-	_collect_rocket()
+	_collect_pickups()
 
-## Collect a nitro pickup only when it has reached the player's row AND the
-## player is on the pickup's lane (like picking a pickup up off the road).
-func _collect_nitro() -> void:
-	for node in get_tree().get_nodes_in_group("nitro"):
-		var pickup := node as NitroPickup
+## Collect any pickup that has reached the player's row AND lane.
+func _collect_pickups() -> void:
+	_collect_group("nitro", GameState.nitro_ready, GameState.store_nitro)
+	_collect_group("rocket", GameState.rocket_ready, GameState.store_rocket)
+
+## Collect one pickup from a group if the player is on it and the reserve is empty.
+func _collect_group(group: String, has_one: bool, store: Callable) -> void:
+	for node in get_tree().get_nodes_in_group(group):
+		var pickup := node as Pickup
 		if pickup == null or not pickup.is_active():
 			continue
 		var on_row: bool = absf(pickup.position.z - global_position.z) < 2.0
 		var on_lane: bool = absf(global_position.x - LANE_X[pickup.lane]) < 0.7
 		if on_row and on_lane:
-			if GameState.nitro_ready:
+			if has_one:
 				continue
 			pickup.deactivate()
-			GameState.store_nitro()
-			return
-
-## Collect a rocket pickup when it has reached the player's row AND the player
-## is on the pickup's lane (like picking a pickup up off the road). Max one
-## rocket in reserve (no stacking).
-func _collect_rocket() -> void:
-	for node in get_tree().get_nodes_in_group("rocket"):
-		var pickup := node as Area3D
-		if pickup == null or not pickup.is_active():
-			continue
-		var on_row: bool = absf(pickup.position.z - global_position.z) < 2.0
-		var on_lane: bool = absf(global_position.x - LANE_X[pickup.lane]) < 0.7
-		if on_row and on_lane:
-			if GameState.rocket_ready:
-				continue
-			pickup.deactivate()
-			GameState.store_rocket()
+			store.call()
 			return
 
 ## Fire a stored rocket along the car body's forward direction (flies straight
