@@ -58,9 +58,9 @@ func _on_area_entered(area: Area3D) -> void:
 func _physics_process(delta: float) -> void:
 	if GameState.state != "playing":
 		return
-	# Collision root stays pinned at the player's row; only the visual Body
-	# surges forward during nitro. So the boost reads clearly but the car never
-	# phases through traffic (and doesn't crash from the surge).
+	# During nitro the whole car (visual + collision hitbox) surges forward
+	# together, so the hitbox is where the car is — no invincibility, no
+	# phasing through traffic; you still crash if a car is in your path.
 	global_position.z = PLAYER_Z
 	var body_target: float = -NITRO_FORWARD if GameState.nitro_time > 0.0 else 0.0
 	_body.position.z = lerp(_body.position.z, body_target, 1.0 - exp(-NITRO_LERP * delta))
@@ -100,6 +100,7 @@ func _physics_process(delta: float) -> void:
 	_body.rotation.y = yaw
 	_detect.rotation.z = _body.rotation.z
 	_detect.rotation.y = _body.rotation.y
+	_detect.position.z = _body.position.z
 
 	_collect_nitro()
 
