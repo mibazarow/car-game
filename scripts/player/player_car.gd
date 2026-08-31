@@ -1,4 +1,5 @@
 extends Area3D
+const RocketScene := preload("res://scenes/Rocket.tscn")
 ## Placeholder police car: lane-based horizontal movement with cosmetic banking.
 ## Top-down view: +Y is up, world "forward" (travel direction) is -Z.
 ## The car stays fixed at PLAYER_Z; the world scrolls. Player only moves along X.
@@ -43,6 +44,8 @@ func _ready() -> void:
 	_prev_x = start_x
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("fire_rocket"):
+		_try_fire_rocket()
 	if event.is_action_pressed("move_left"):
 		target_lane = clamp(target_lane - 1, 0, 3)
 	elif event.is_action_pressed("move_right"):
@@ -103,6 +106,7 @@ func _physics_process(delta: float) -> void:
 	_detect.position.z = _body.position.z
 
 	_collect_nitro()
+	_collect_rocket()
 
 ## Collect a nitro pickup only when it has reached the player's row AND the
 ## player is on the pickup's lane (like picking a pickup up off the road).
@@ -119,3 +123,37 @@ func _collect_nitro() -> void:
 			pickup.deactivate()
 			GameState.store_nitro()
 			return
+
+## Collect a rocket pickup when it has reached the player's row AND the player
+## is on the pickup's lane (like picking a pickup up off the road). Max one
+## rocket in reserve (no stacking).
+func _collect_rocket() -> void:
+	for node in get_tree().get_nodes_in_group("rocket"):
+		var pickup := node as Area3D
+		if pickup == null or not pickup.is_active():
+			continue
+		var on_row: bool = absf(pickup.position.z - global_position.z) < 2.0
+		var on_lane: bool = absf(global_position.x - LANE_X[pickup.lane]) < 0.7
+		if on_row and on_lane:
+			if GameState.rocket_ready:
+				continue
+			pickup.deactivate()
+			GameState.store_rocket()
+			return
+
+## Fire a stored rocket along the car body's forward direction (flies straight
+## from the nose; if the car is banking/turning it flies at that angle).
+func _try_fire_rocket() -> void:
+	if GameState.state != "playing":
+		return
+	if not GameState.consume_rocket():
+		return
+	var fwd := -_body.global_transform.basis.z
+	var dir := Vector3(fwd.x, 0.0, fwd.z)
+	if dir.length_squared() < 0.0001:
+		dir = Vector3(0, 0, -1)
+	else:
+		dir = dir.normalized()
+	var rocket: Area3D = RocketScene.instantiate()
+	get_tree().current_scene.add_child(rocket)
+	rocket.launch(_body.global_position, dir)

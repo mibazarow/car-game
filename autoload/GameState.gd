@@ -8,6 +8,9 @@ signal score_changed
 ## Emitted when enough traffic cars have been overtaken to spawn a nitro pickup.
 signal nitro_should_spawn
 
+## Emitted when enough traffic cars have been overtaken to spawn a rocket pickup.
+signal rocket_should_spawn
+
 ## Path (in user://) where the best score is persisted between runs.
 const BEST_SAVE_PATH := "user://best.cfg"
 
@@ -23,12 +26,13 @@ func _ready() -> void:
 func _setup_audio() -> void:
 	_engine = AudioStreamPlayer.new()
 	_engine.stream = load("res://MODELS/engine.wav")
-	_engine.volume_db = linear_to_db(0.7)
+	_engine.volume_db = linear_to_db(0.25)
 	_engine.finished.connect(func() -> void: _engine.play())
 	add_child(_engine)
 
 	_nitro = AudioStreamPlayer.new()
 	_nitro.stream = load("res://MODELS/nitro.wav")
+	_nitro.volume_db = linear_to_db(0.25)
 	add_child(_nitro)
 
 func _update_engine() -> void:
@@ -67,6 +71,12 @@ func _register_input_actions() -> void:
 		key_space.keycode = KEY_SPACE
 		InputMap.action_add_event("use_nitro", key_space)
 
+	if !InputMap.has_action("fire_rocket"):
+		InputMap.add_action("fire_rocket")
+		var key_enter := InputEventKey.new()
+		key_enter.keycode = KEY_ENTER
+		InputMap.action_add_event("fire_rocket", key_enter)
+
 ## Base forward speed used by the road scroll.
 const BASE_SPEED := 12.0
 ## Points accumulated before difficulty increases by one level.
@@ -81,6 +91,8 @@ const SPEED_RAMP := 1.5
 const NITRO_EVERY := 15
 ## How long (seconds) nitro stays active once collected.
 const NITRO_DURATION := 2.0
+## Spawn a rocket pickup this many cars AFTER a nitro pickup spawns.
+const ROCKET_AFTER_NITRO := 4
 
 ## Forward speed used by the road scroll.
 var speed: float = BASE_SPEED
@@ -100,6 +112,14 @@ var passed_cars := 0
 var nitro_time := 0.0
 ## Whether one nitro pickup is stored in reserve (max one).
 var nitro_ready: bool = false
+## Number of traffic cars overtaken since the last rocket pickup spawn.
+var rocket_passed_cars := 0
+## Whether one rocket is stored in reserve (max one).
+var rocket_ready: bool = false
+## True if the last run ended in a WIN (player destroyed the enemy).
+var victory: bool = false
+## Whether a rocket is pending to spawn (armed after a nitro spawns).
+var rocket_armed := false
 
 
 ## Add points to the current score and notify the HUD. Keeps `best` updated.
@@ -123,10 +143,29 @@ func on_car_passed() -> void:
 	if passed_cars >= NITRO_EVERY:
 		passed_cars = 0
 		nitro_should_spawn.emit()
+		rocket_armed = true
+		rocket_passed_cars = 0
+	elif rocket_armed:
+		rocket_passed_cars += 1
+		if rocket_passed_cars >= ROCKET_AFTER_NITRO:
+			rocket_armed = false
+			rocket_should_spawn.emit()
 
 ## Store a collected nitro pickup into the reserve (max one).
 func store_nitro() -> void:
 	nitro_ready = true
+
+## Store a collected rocket into the reserve (max one).
+func store_rocket() -> void:
+	rocket_ready = true
+
+## Try to consume the stored rocket. Returns true (and clears the reserve) if
+## one was available; false if none stored.
+func consume_rocket() -> bool:
+	if not rocket_ready:
+		return false
+	rocket_ready = false
+	return true
 
 ## Start (or refresh) the nitro timer for `NITRO_DURATION` seconds.
 func activate_nitro() -> void:
@@ -165,6 +204,18 @@ func game_over() -> void:
 	_save_best()
 	score_changed.emit()
 
+## Called when the player destroys the fleeing enemy: a win. Freezes play and
+## persists the record.
+func win() -> void:
+	if state == "game_over":
+		return
+	victory = true
+	state = "game_over"
+	if score > best:
+		best = score
+	_save_best()
+	score_changed.emit()
+
 
 ## Reset the score and state for a fresh run.
 func reset_run() -> void:
@@ -176,6 +227,10 @@ func reset_run() -> void:
 	passed_cars = 0
 	nitro_time = 0.0
 	nitro_ready = false
+	rocket_passed_cars = 0
+	rocket_ready = false
+	victory = false
+	rocket_armed = false
 	score_changed.emit()
 
 ## Start a run from the menu: reset and enter the "playing" state.

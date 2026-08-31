@@ -5,16 +5,22 @@ extends CanvasLayer
 var _score_value: Label
 var _best_value: Label
 var _restart_button: Button
+var _title: Label
 
 func _ready() -> void:
 	_score_value = $Panel/ScoreValue
 	_best_value = $Panel/BestValue
 	_restart_button = $Panel/RestartButton
+	_title = $Panel/Title
 	_restart_button.pressed.connect(_restart)
 
 func _process(_delta: float) -> void:
 	visible = (GameState.state == "game_over")
 	if visible:
+		if GameState.victory:
+			_title.text = "ПОБЕДА!\nПоздравляем, вы победили!"
+		else:
+			_title.text = "GAME OVER"
 		_score_value.text = "Score: %d" % GameState.score
 		_best_value.text = "Best: %d" % GameState.best
 

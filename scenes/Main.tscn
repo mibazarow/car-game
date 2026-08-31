@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3 uid="uid://c1m4n7p2q9r3s5"]
+[gd_scene load_steps=13 format=3 uid="uid://c1m4n7p2q9r3s5"]
 
 [ext_resource type="PackedScene" path="res://scenes/RoadGenerator.tscn" id="1_roadgen"]
 [ext_resource type="PackedScene" path="res://scenes/PlayerCar.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/TrafficSpawner.tscn" id="3_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/FleeingCar.tscn" id="4_fleeing"]
 [ext_resource type="PackedScene" path="res://scenes/NitroSpawner.tscn" id="9_nitrospawner"]
+[ext_resource type="PackedScene" path="res://scenes/RocketSpawner.tscn" id="10_rocket"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="5_hud"]
 [ext_resource type="PackedScene" path="res://scenes/GameOverScreen.tscn" id="6_over"]
 [ext_resource type="PackedScene" path="res://scenes/MenuScreen.tscn" id="7_menu"]
@@ -29,6 +30,8 @@ light_energy = 1.0
 [node name="RoadGenerator" parent="." instance=ExtResource("1_roadgen")]
 
 [node name="NitroSpawner" parent="." instance=ExtResource("9_nitrospawner")]
+
+[node name="RocketSpawner" parent="." instance=ExtResource("10_rocket")]
 
 [node name="PlayerCar" parent="." instance=ExtResource("2_player")]
 

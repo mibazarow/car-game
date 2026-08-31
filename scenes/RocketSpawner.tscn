@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://r0ck3tsp0w0n3r1"]
+
+[ext_resource type="Script" path="res://scripts/rocket_spawner.gd" id="1_spawner"]
+
+[node name="RocketSpawner" type="Node3D"]
+script = ExtResource("1_spawner")
