@@ -17,6 +17,10 @@ const FOLLOW_DIST: float = 6.0
 const ACCEL := 2.0
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
+# Sentinel for "no car ahead yet" (very negative Z).
+const NEG_INF := -3.4028235e38
+# Small margin so a held car sits just ABOVE the threat band (not inside it).
+const HOLD_MARGIN := 0.01
 # Threat band around the player's row [0.5..5.5] (includes approaching cars). With at most 2 cars, and never in adjacent lanes, the player always has a free lane to dodge into — no "checkmate" wall.
 const DANGER_Z_MIN: float = 0.5
 const DANGER_Z_MAX: float = 5.5
@@ -76,7 +80,7 @@ func is_active() -> bool:
 ## Nearest active car in the same lane that is ahead (smaller Z). Else null.
 func _car_ahead() -> TrafficCar:
 	var nearest: TrafficCar = null
-	var nearest_z := -3.4028235e38
+	var nearest_z := NEG_INF
 	for node in get_tree().get_nodes_in_group("traffic"):
 		var c := node as TrafficCar
 		if c == null or !c.active:
@@ -134,7 +138,7 @@ func _physics_process(delta: float) -> void:
 	var will_overfill: bool = _count_in_danger_zone() >= MAX_IN_ZONE
 	var will_pair: bool = _adjacent_occupied()
 	if position.z < DANGER_Z_MIN and next_z >= DANGER_Z_MIN and (will_overfill or will_pair):
-		position.z = DANGER_Z_MIN - 0.01
+		position.z = DANGER_Z_MIN - HOLD_MARGIN
 	else:
 		position.z = next_z
 

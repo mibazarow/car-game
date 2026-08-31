@@ -27,6 +27,10 @@ const CURB_COLOR := Color(0.62, 0.62, 0.64)     # light curb
 const DIVIDER_COLOR := Color(0.9, 0.9, 0.9)
 const EDGE_COLOR := Color(0.95, 0.9, 0.2)
 
+# Small Y offsets to layer the road strips (avoid z-fighting).
+const GROUND_OFFSET_Y := -0.02
+const LINE_OFFSET_Y := 0.01
+
 var _segment_length := SEGMENT_LENGTH
 var _segment_count := 0
 var _total_span := 0.0
@@ -34,6 +38,21 @@ var _total_span := 0.0
 
 func _ready() -> void:
 	_build_road()
+
+
+## Create a flat colored plane mesh child.
+func _make_plane(parent: Node3D, size: Vector2, color: Color, pos: Vector3, node_name: String) -> void:
+	var plane := PlaneMesh.new()
+	plane.size = size
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 1.0
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = plane
+	mesh.material_override = mat
+	mesh.position = pos
+	mesh.name = node_name
+	parent.add_child(mesh)
 
 
 func _build_road() -> void:
@@ -63,57 +82,21 @@ func _build_segment() -> Node3D:
 
 ## Wide grass plane below the road, so the road sits on a surface.
 func _ground(parent: Node3D) -> void:
-	var ground := PlaneMesh.new()
-	ground.size = Vector2(GROUND_HALF_WIDTH * 2.0, _segment_length)
-
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = GROUND_COLOR
-	mat.roughness = 1.0
-
-	var mesh := MeshInstance3D.new()
-	mesh.mesh = ground
-	mesh.material_override = mat
-	mesh.position = Vector3(0.0, -0.02, 0.0)
-	mesh.name = "Ground"
-	parent.add_child(mesh)
+	_make_plane(parent, Vector2(GROUND_HALF_WIDTH * 2.0, _segment_length), GROUND_COLOR, Vector3(0.0, GROUND_OFFSET_Y, 0.0), "Ground")
 
 
 ## Concrete shoulder strips on each side of the asphalt.
 func _shoulders(parent: Node3D) -> void:
 	for s in [-1.0, 1.0]:
 		var x: float = s * (ROAD_HALF_WIDTH + SHOULDER_WIDTH * 0.5)
-		var shoulder := PlaneMesh.new()
-		shoulder.size = Vector2(SHOULDER_WIDTH, _segment_length)
-
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = SHOULDER_COLOR
-		mat.roughness = 1.0
-
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = shoulder
-		mesh.material_override = mat
-		mesh.position = Vector3(x, 0.0, 0.0)
-		mesh.name = "Shoulder_" + str(x)
-		parent.add_child(mesh)
+		_make_plane(parent, Vector2(SHOULDER_WIDTH, _segment_length), SHOULDER_COLOR, Vector3(x, 0.0, 0.0), "Shoulder_" + str(x))
 
 
 ## Thin curb (kerb) strips at the very outer edges.
 func _curbs(parent: Node3D) -> void:
 	for s in [-1.0, 1.0]:
 		var x: float = s * (ROAD_HALF_WIDTH + SHOULDER_WIDTH)
-		var curb := PlaneMesh.new()
-		curb.size = Vector2(CURB_WIDTH, _segment_length)
-
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = CURB_COLOR
-		mat.roughness = 1.0
-
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = curb
-		mesh.material_override = mat
-		mesh.position = Vector3(x, 0.01, 0.0)
-		mesh.name = "Curb_" + str(x)
-		parent.add_child(mesh)
+		_make_plane(parent, Vector2(CURB_WIDTH, _segment_length), CURB_COLOR, Vector3(x, LINE_OFFSET_Y, 0.0), "Curb_" + str(x))
 
 
 func _asphalt_slab(parent: Node3D) -> void:
@@ -147,36 +130,12 @@ func _lane_dividers(parent: Node3D) -> void:
 	for x in LANE_DIVIDERS:
 		for i in DASHES_PER_SEGMENT:
 			var z := -_segment_length * 0.5 + (i + 0.5) * period
-			var line := PlaneMesh.new()
-			line.size = Vector2(LINE_WIDTH, DASH_LEN)
-
-			var mat := StandardMaterial3D.new()
-			mat.albedo_color = DIVIDER_COLOR
-			mat.roughness = 1.0
-
-			var mesh := MeshInstance3D.new()
-			mesh.mesh = line
-			mesh.material_override = mat
-			mesh.position = Vector3(x, 0.01, z)
-			mesh.name = "Divider_" + str(x) + "_" + str(i)
-			parent.add_child(mesh)
+			_make_plane(parent, Vector2(LINE_WIDTH, DASH_LEN), DIVIDER_COLOR, Vector3(x, LINE_OFFSET_Y, z), "Divider_" + str(x) + "_" + str(i))
 
 
 func _edge_lines(parent: Node3D) -> void:
 	for x in EDGE_LINES:
-		var line := PlaneMesh.new()
-		line.size = Vector2(0.25, _segment_length)
-
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = EDGE_COLOR
-		mat.roughness = 1.0
-
-		var mesh := MeshInstance3D.new()
-		mesh.mesh = line
-		mesh.material_override = mat
-		mesh.position = Vector3(x, 0.01, 0.0)
-		mesh.name = "Edge_" + str(x)
-		parent.add_child(mesh)
+		_make_plane(parent, Vector2(0.25, _segment_length), EDGE_COLOR, Vector3(x, LINE_OFFSET_Y, 0.0), "Edge_" + str(x))
 
 
 func _process(delta: float) -> void:
