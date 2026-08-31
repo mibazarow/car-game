@@ -13,6 +13,9 @@ config/icon="res://MODELS/ico.png"
 [autoload]
 
 GameState="*res://autoload/GameState.gd"
+AudioManager="*res://autoload/audio_manager.gd"
+SaveManager="*res://autoload/save_manager.gd"
+WindowManager="*res://autoload/window_manager.gd"
 
 [display]
 

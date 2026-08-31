@@ -11,36 +11,8 @@ signal nitro_should_spawn
 ## Emitted when enough traffic cars have been overtaken to spawn a rocket pickup.
 signal rocket_should_spawn
 
-## Path (in user://) where the best score is persisted between runs.
-const BEST_SAVE_PATH := "user://best.cfg"
-
-var _engine: AudioStreamPlayer
-var _nitro: AudioStreamPlayer
-
 func _ready() -> void:
 	_register_input_actions()
-	_load_best()
-	_size_window()
-	_setup_audio()
-
-func _setup_audio() -> void:
-	_engine = AudioStreamPlayer.new()
-	_engine.stream = load("res://MODELS/engine.wav")
-	_engine.volume_db = linear_to_db(0.25)
-	_engine.finished.connect(func() -> void: _engine.play())
-	add_child(_engine)
-
-	_nitro = AudioStreamPlayer.new()
-	_nitro.stream = load("res://MODELS/nitro.wav")
-	_nitro.volume_db = linear_to_db(0.25)
-	add_child(_nitro)
-
-func _update_engine() -> void:
-	if state == "playing" or state == "paused":
-		if !_engine.is_playing():
-			_engine.play()
-	else:
-		_engine.stop()
 
 func _register_input_actions() -> void:
 	# move_left: Left arrow / A
@@ -173,16 +145,13 @@ func activate_nitro() -> void:
 		return
 	nitro_ready = false
 	nitro_time = NITRO_DURATION
-	if _nitro != null:
-		_nitro.stop()
-		_nitro.play()
+	AudioManager.play_nitro()
 
 ## Drain the nitro timer while playing so the fleeing car approaches.
 func _process(delta: float) -> void:
 	speed = lerp(speed, speed_target, 1.0 - exp(-SPEED_RAMP * delta))
 	if state == "playing":
 		nitro_time = maxf(0.0, nitro_time - delta)
-	_update_engine()
 
 
 ## Slowly raise `speed` as the score climbs, one small bump per
@@ -201,7 +170,7 @@ func game_over() -> void:
 	state = "game_over"
 	if score > best:
 		best = score
-	_save_best()
+	SaveManager.save_best(best)
 	score_changed.emit()
 
 ## Called when the player destroys the fleeing enemy: a win. Freezes play and
@@ -213,7 +182,7 @@ func win() -> void:
 	state = "game_over"
 	if score > best:
 		best = score
-	_save_best()
+	SaveManager.save_best(best)
 	score_changed.emit()
 
 
@@ -255,30 +224,3 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_P or event.keycode == KEY_ESCAPE:
 			toggle_pause()
-
-
-func _load_best() -> void:
-	var cfg := ConfigFile.new()
-	if cfg.load(BEST_SAVE_PATH) == OK:
-		best = int(cfg.get_value("score", "best", 0))
-
-
-func _save_best() -> void:
-	var cfg := ConfigFile.new()
-	cfg.set_value("score", "best", best)
-	cfg.save(BEST_SAVE_PATH)
-
-
-## Auto-size the window to ~75% of the screen height with a portrait aspect
-## and center it on the screen. Never errors out the game if a call fails.
-func _size_window() -> void:
-	var screen := DisplayServer.screen_get_size()
-	if screen == Vector2i.ZERO:
-		return
-	var screen_pos := DisplayServer.screen_get_position()
-	var win_h := int(screen.y * 0.75)
-	var win_w := int(win_h * 0.5625)
-	var win_size := Vector2i(win_w, win_h)
-	var pos := screen_pos + (screen - win_size) / 2
-	DisplayServer.window_set_size(win_size)
-	DisplayServer.window_set_position(pos)
