@@ -19,3 +19,6 @@ LOCAL_SERVER_INTERFACE/
 # Godot import cache
 .godot/
 godot-docs/
+
+# Export build output
+build/
