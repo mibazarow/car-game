@@ -3,6 +3,8 @@
 
 # Tool dirs
 .playwright-mcp/
+# Ad-hoc inspection/screenshot scripts (dev-only, not part of the game)
+tools/
 
 # Server 3D pipeline: contains secrets (SSH password, HF token) and large model assets.
 # NEVER commit secrets — keep this excluded.
@@ -11,6 +13,8 @@ LOCAL_SERVER_INTERFACE/
 # Large binary model assets
 *.glb
 *.blend
+*.blend.bak
+*.sketch
 
 # Godot import cache
 .godot/
