@@ -53,8 +53,15 @@ func _process(delta: float) -> void:
 	if _life <= 0.0 or position.z < -25.0 or position.z > 25.0 or absf(position.x) > 20.0:
 		deactivate()
 
+## Show the win explosion at a world position.
+func _spawn_explosion(at: Vector3) -> void:
+	var boom: Node3D = (load("res://scenes/Explosion.tscn") as PackedScene).instantiate()
+	get_tree().current_scene.add_child(boom)
+	boom.global_position = at
+
 func _on_area_entered(area: Area3D) -> void:
 	if area is FleeingCar:
+		_spawn_explosion(area.global_position)
 		GameState.win()
 		deactivate()
 	elif area is TrafficCar:
