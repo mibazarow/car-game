@@ -1,15 +1,11 @@
-[gd_scene load_steps=11 format=3 uid="uid://d7t3v9k2m6p4w2"]
+[gd_scene load_steps=12 format=3 uid="uid://d7t3v9k2m6p4w2"]
 
 [ext_resource type="Script" path="res://scripts/traffic/traffic_car.gd" id="1_traffic"]
-[ext_resource type="PackedScene" path="res://MODELS/2_city_car_beige_.glb" id="2_beige"]
-[ext_resource type="PackedScene" path="res://MODELS/3_city_car_blue_.glb" id="3_blue"]
-[ext_resource type="PackedScene" path="res://MODELS/4_city_car_yellow_.glb" id="4_yellow"]
-[ext_resource type="PackedScene" path="res://MODELS/5_city_car_green_.glb" id="5_green"]
-[ext_resource type="PackedScene" path="res://MODELS/6_semi_truck_red_.glb" id="6_truckred"]
-[ext_resource type="PackedScene" path="res://MODELS/7_semi_truck_white_.glb" id="7_truckwhite"]
-
-[sub_resource type="BoxShape3D" id="Shape_Beige"]
-size = Vector3(1.1, 1.0, 2.4)
+[ext_resource type="Texture2D" path="res://assets/car_blue.png" id="3_blue"]
+[ext_resource type="Texture2D" path="res://assets/car_yellow.png" id="4_yellow"]
+[ext_resource type="Texture2D" path="res://assets/car_green.png" id="5_green"]
+[ext_resource type="Texture2D" path="res://assets/truck_red.png" id="6_truckred"]
+[ext_resource type="Texture2D" path="res://assets/truck_white.png" id="7_truckwhite"]
 
 [sub_resource type="BoxShape3D" id="Shape_Blue"]
 size = Vector3(1.1, 1.0, 2.3)
@@ -34,34 +30,41 @@ collision_mask = 0
 
 [node name="Models" type="Node3D" parent="."]
 
-[node name="Beige" type="Node3D" parent="Models" instance=ExtResource("2_beige")]
-transform = Transform3D(-1.294, 0, 0, 0, 1.294, 0, 0, 0, -1.294, 0, 0, 0)
-
-[node name="Blue" type="Node3D" parent="Models" instance=ExtResource("3_blue")]
-transform = Transform3D(-1.275, 0, 0, 0, 1.275, 0, 0, 0, -1.275, 0, 0, 0)
+[node name="Blue" type="Sprite3D" parent="Models"]
+texture = ExtResource("3_blue")
+pixel_size = 0.019921875
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)
 visible = false
 
-[node name="Yellow" type="Node3D" parent="Models" instance=ExtResource("4_yellow")]
-transform = Transform3D(-0.695, 0, 0, 0, 0.695, 0, 0, 0, -0.695, 0, 0, 0)
+[node name="Yellow" type="Sprite3D" parent="Models"]
+texture = ExtResource("4_yellow")
+pixel_size = 0.010859375
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)
 visible = false
 
-[node name="Green" type="Node3D" parent="Models" instance=ExtResource("5_green")]
-transform = Transform3D(-1.143, 0, 0, 0, 1.143, 0, 0, 0, -1.143, 0, 0, 0)
+[node name="Green" type="Sprite3D" parent="Models"]
+texture = ExtResource("5_green")
+pixel_size = 0.017859375
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)
 visible = false
 
-[node name="TruckRed" type="Node3D" parent="Models" instance=ExtResource("6_truckred")]
-transform = Transform3D(-3.34, 0, 0, 0, 3.34, 0, 0, 0, -3.34, 0, 0, 0)
+[node name="TruckRed" type="Sprite3D" parent="Models"]
+texture = ExtResource("6_truckred")
+pixel_size = 0.0521875
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)
 visible = false
 
-[node name="TruckWhite" type="Node3D" parent="Models" instance=ExtResource("7_truckwhite")]
-transform = Transform3D(-2.25, 0, 0, 0, 2.25, 0, 0, 0, -2.25, 0, 0, 0)
+[node name="TruckWhite" type="Sprite3D" parent="Models"]
+texture = ExtResource("7_truckwhite")
+pixel_size = 0.03515625
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)
 visible = false
 
-
-[node name="CollBeige" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-shape = SubResource("Shape_Beige")
-disabled = true
 
 [node name="CollBlue" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
