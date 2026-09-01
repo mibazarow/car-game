@@ -13,6 +13,8 @@ const SPAWN_Z: float = -25.0
 const RECYCLE_Z: float = 18.0
 ## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
 const FOLLOW_DIST: float = 6.0
+## Extra clearance kept behind the car ahead (units) when held.
+const FOLLOW_GAP_MARGIN := 0.3
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
 # Sentinel for "no car ahead yet" (very negative Z).
@@ -36,6 +38,9 @@ var lane: int = 0
 ## Whether the car is currently in use (spawned / active).
 var active: bool = false
 
+## This car's active collider half-length in Z (set in activate()).
+var _half_z: float = 0.0
+
 ## Model variant indexes (0..5) that are trucks; trucks drive slower.
 const TRUCK_INDEX_START: int = 4
 ## Model/collider variants in order: Beige, Blue, Yellow, Green, TruckRed, TruckWhite.
@@ -51,6 +56,7 @@ func activate(new_lane: int, new_forward_speed: float) -> void:
 		c.disabled = true
 	_models[vi].visible = true
 	_colliders[vi].disabled = false
+	_half_z = _colliders[vi].shape.size.z * 0.5
 	if vi >= TRUCK_INDEX_START:
 		forward_speed = minf(new_forward_speed, randf_range(1.5, 3.5))
 	else:
@@ -128,6 +134,11 @@ func _physics_process(delta: float) -> void:
 		speed_z = minf(speed_z, ahead.speed_z)
 
 	var next_z: float = position.z + speed_z * delta
+	# Physically never pass the car ahead: stay at least a small gap behind its
+	# tail even if that car is momentarily held/stopped at the danger zone.
+	if ahead != null:
+		var max_z: float = ahead.position.z - (_half_z + ahead._half_z) - FOLLOW_GAP_MARGIN
+		next_z = minf(next_z, max_z)
 	# Anti-checkmate: a car about to enter the player's danger zone holds just
 	# above it if the zone is full OR the car would sit next to (adjacent lane)
 	# another car already in the zone. This guarantees no 2 cars in adjacent
