@@ -9,7 +9,7 @@ func _ready() -> void:
 
 func _setup_audio() -> void:
 	_engine = AudioStreamPlayer.new()
-	_engine.stream = load("res://MODELS/engine.wav")
+	_engine.stream = load("res://assets/toyota-supra-turbo-car.mp3")
 	_engine.volume_db = linear_to_db(0.25)
 	_engine.finished.connect(func() -> void: _engine.play())
 	add_child(_engine)
