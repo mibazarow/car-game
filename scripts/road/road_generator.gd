@@ -31,7 +31,6 @@ const EDGE_COLOR := Color(0.95, 0.9, 0.2)
 const GROUND_OFFSET_Y := -0.02
 const LINE_OFFSET_Y := 0.01
 
-var _segment_length := SEGMENT_LENGTH
 var _segment_count := 0
 var _total_span := 0.0
 
@@ -58,12 +57,12 @@ func _make_plane(parent: Node3D, size: Vector2, color: Color, pos: Vector3, node
 func _build_road() -> void:
 	# Enough segments to fully cover [COVERAGE_MAX, COVERAGE_MIN] with no gaps.
 	var span := COVERAGE_MIN - COVERAGE_MAX          # 26.0
-	_segment_count = int(ceil(span / _segment_length)) + 1  # +1 margin
-	_total_span = _segment_count * _segment_length
+	_segment_count = int(ceil(span / SEGMENT_LENGTH)) + 1  # +1 margin
+	_total_span = _segment_count * SEGMENT_LENGTH
 
 	for i in _segment_count:
 		var segment := _build_segment()
-		segment.position.z = COVERAGE_MIN - i * _segment_length
+		segment.position.z = COVERAGE_MIN - i * SEGMENT_LENGTH
 		add_child(segment)
 
 
@@ -82,21 +81,21 @@ func _build_segment() -> Node3D:
 
 ## Wide grass plane below the road, so the road sits on a surface.
 func _ground(parent: Node3D) -> void:
-	_make_plane(parent, Vector2(GROUND_HALF_WIDTH * 2.0, _segment_length), GROUND_COLOR, Vector3(0.0, GROUND_OFFSET_Y, 0.0), "Ground")
+	_make_plane(parent, Vector2(GROUND_HALF_WIDTH * 2.0, SEGMENT_LENGTH), GROUND_COLOR, Vector3(0.0, GROUND_OFFSET_Y, 0.0), "Ground")
 
 
 ## Concrete shoulder strips on each side of the asphalt.
 func _shoulders(parent: Node3D) -> void:
 	for s in [-1.0, 1.0]:
 		var x: float = s * (ROAD_HALF_WIDTH + SHOULDER_WIDTH * 0.5)
-		_make_plane(parent, Vector2(SHOULDER_WIDTH, _segment_length), SHOULDER_COLOR, Vector3(x, 0.0, 0.0), "Shoulder_" + str(x))
+		_make_plane(parent, Vector2(SHOULDER_WIDTH, SEGMENT_LENGTH), SHOULDER_COLOR, Vector3(x, 0.0, 0.0), "Shoulder_" + str(x))
 
 
 ## Thin curb (kerb) strips at the very outer edges.
 func _curbs(parent: Node3D) -> void:
 	for s in [-1.0, 1.0]:
 		var x: float = s * (ROAD_HALF_WIDTH + SHOULDER_WIDTH)
-		_make_plane(parent, Vector2(CURB_WIDTH, _segment_length), CURB_COLOR, Vector3(x, LINE_OFFSET_Y, 0.0), "Curb_" + str(x))
+		_make_plane(parent, Vector2(CURB_WIDTH, SEGMENT_LENGTH), CURB_COLOR, Vector3(x, LINE_OFFSET_Y, 0.0), "Curb_" + str(x))
 
 
 func _asphalt_slab(parent: Node3D) -> void:
@@ -104,14 +103,14 @@ func _asphalt_slab(parent: Node3D) -> void:
 	var tex := load("res://MODELS/asfalt_2.png")
 
 	var slab := PlaneMesh.new()
-	slab.size = Vector2(ROAD_HALF_WIDTH * 2.0, _segment_length)
+	slab.size = Vector2(ROAD_HALF_WIDTH * 2.0, SEGMENT_LENGTH)
 
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = tex
 	mat.roughness = 1.0
 
 	var tile_world := (ROAD_HALF_WIDTH * 2.0) / TILES_ACROSS
-	var tiles_along := _segment_length / tile_world
+	var tiles_along := SEGMENT_LENGTH / tile_world
 	mat.uv1_scale = Vector3(TILES_ACROSS, tiles_along, 1.0)
 
 	var mesh := MeshInstance3D.new()
@@ -125,17 +124,17 @@ func _lane_dividers(parent: Node3D) -> void:
 	const LINE_WIDTH := 0.125
 	const DASHES_PER_SEGMENT := 3
 	const DASH_LEN := 0.9
-	var gap := (_segment_length - DASHES_PER_SEGMENT * DASH_LEN) / DASHES_PER_SEGMENT
+	var gap := (SEGMENT_LENGTH - DASHES_PER_SEGMENT * DASH_LEN) / DASHES_PER_SEGMENT
 	var period := DASH_LEN + gap
 	for x in LANE_DIVIDERS:
 		for i in DASHES_PER_SEGMENT:
-			var z := -_segment_length * 0.5 + (i + 0.5) * period
+			var z := -SEGMENT_LENGTH * 0.5 + (i + 0.5) * period
 			_make_plane(parent, Vector2(LINE_WIDTH, DASH_LEN), DIVIDER_COLOR, Vector3(x, LINE_OFFSET_Y, z), "Divider_" + str(x) + "_" + str(i))
 
 
 func _edge_lines(parent: Node3D) -> void:
 	for x in EDGE_LINES:
-		_make_plane(parent, Vector2(0.25, _segment_length), EDGE_COLOR, Vector3(x, LINE_OFFSET_Y, 0.0), "Edge_" + str(x))
+		_make_plane(parent, Vector2(0.25, SEGMENT_LENGTH), EDGE_COLOR, Vector3(x, LINE_OFFSET_Y, 0.0), "Edge_" + str(x))
 
 
 func _process(delta: float) -> void:

@@ -3,8 +3,6 @@ extends Area3D
 ## Shared pickup logic: lies flat on the road, scrolls with it (+Z), and is
 ## activated/deactivated by a spawner. Subclasses add themselves to a group.
 
-# Lane center X positions (lanes 0..3, left -> right).
-const LANE_X: Array[float] = [-3.0, -1.0, 1.0, 3.0]
 # Where a freshly spawned pickup enters (top of screen, negative Z).
 const SPAWN_Z: float = -25.0
 # Past this Z the pickup has scrolled past the player and is recycled.
@@ -18,7 +16,7 @@ var lane: int = 0
 ## Place the pickup on a lane and start it scrolling toward the player.
 func activate(new_lane: int) -> void:
 	lane = clampi(new_lane, 0, 3)
-	position.x = LANE_X[lane]
+	position.x = RoadConfig.lane_center(lane)
 	position.z = SPAWN_Z
 	active = true
 	set_process(true)
