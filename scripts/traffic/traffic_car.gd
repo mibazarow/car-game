@@ -13,8 +13,6 @@ const SPAWN_Z: float = -25.0
 const RECYCLE_Z: float = 18.0
 ## Minimum world-Z gap to keep behind the car ahead (prevents overlap).
 const FOLLOW_DIST: float = 6.0
-## Uniform acceleration rate for traffic cars (units/s^2) — smooth speed changes.
-const ACCEL := 2.0
 ## X distance (units) beyond which two cars are considered different lanes.
 const LANE_TOLERANCE: float = 1.0
 # Sentinel for "no car ahead yet" (very negative Z).
@@ -120,14 +118,14 @@ func _physics_process(delta: float) -> void:
 		return
 	if not active:
 		return
-	var target: float = GameState.speed - forward_speed
+	# Each car drives at its OWN constant speed (set at spawn). We never
+	# re-accelerate it each frame, so cars don't lurch forward. To avoid
+	# rear-ending the car ahead, the follower never exceeds the ahead car's
+	# speed whenever there is a car directly ahead in the same lane — it never
+	# speeds back up, so no jerk.
 	var ahead := _car_ahead()
 	if ahead != null:
-		var gap := position.z - ahead.position.z
-		if gap < FOLLOW_DIST:
-			target = minf(target, ahead.speed_z)
-	var dv: float = clampf(target - speed_z, -ACCEL * delta, ACCEL * delta)
-	speed_z += dv
+		speed_z = minf(speed_z, ahead.speed_z)
 
 	var next_z: float = position.z + speed_z * delta
 	# Anti-checkmate: a car about to enter the player's danger zone holds just
