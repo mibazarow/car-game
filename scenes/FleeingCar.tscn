@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://c7f3m2n9p4q6r1t9"]
 
 [ext_resource type="Script" path="res://scripts/fleeing/fleeing_car.gd" id="1_fleeing"]
-[ext_resource type="PackedScene" path="res://MODELS/2_city_car_beige_.glb" id="2_flee"]
+[ext_resource type="Texture2D" path="res://assets/car_beige.png" id="2_tex"]
 
 [sub_resource type="BoxShape3D" id="Shape_body"]
 size = Vector3(1.25, 1.0, 2.6)
@@ -11,8 +11,12 @@ script = ExtResource("1_fleeing")
 collision_layer = 4
 collision_mask = 0
 
-[node name="CarModel" type="Node3D" parent="." instance=ExtResource("2_flee")]
-transform = Transform3D(-1.294, 0, 0, 0, 1.294, 0, 0, 0, -1.294, 0, 0, 0)
+[node name="CarModel" type="Node3D" parent="."]
+[node name="CarVisual" type="Sprite3D" parent="CarModel"]
+texture = ExtResource("2_tex")
+pixel_size = 0.02021875
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("Shape_body")

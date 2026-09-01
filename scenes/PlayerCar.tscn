@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://b9c2f4k7p3q1r8t6"]
 
 [ext_resource type="Script" path="res://scripts/player/player_car.gd" id="1_player"]
-[ext_resource type="PackedScene" path="res://MODELS/1_police_hero_car_.glb" id="2_blue"]
+[ext_resource type="Texture2D" path="res://assets/car_police.png" id="2_tex"]
 
 [sub_resource type="BoxShape3D" id="Shape_detect"]
 size = Vector3(1.15, 1.6, 2.4)
@@ -20,5 +20,8 @@ collision_mask = 14
 shape = SubResource("Shape_detect")
 
 [node name="CarModel" type="Node3D" parent="."]
-[node name="CarVisual" type="Node3D" parent="CarModel" instance=ExtResource("2_blue")]
-transform = Transform3D(-1.275, 0, 0, 0, 1.275, 0, 0, 0, -1.275, 0, 0, 0)
+[node name="CarVisual" type="Sprite3D" parent="CarModel"]
+texture = ExtResource("2_tex")
+pixel_size = 0.019921875
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(1.5708, 0, 0)

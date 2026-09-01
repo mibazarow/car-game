@@ -14,6 +14,15 @@ const LIFETIME: float = 3.0
 ## How long the rocket has been alive.
 var _life: float = LIFETIME
 
+# Pseudo-3D wobble: a small lateral left/right oscillation so the rocket reads
+# as a wobbling missile. Amplitude is small (stays within the lane).
+const WOBBLE_AMP: float = 8.0
+const WOBBLE_FREQ: float = 20.0
+## Perpendicular (lateral) direction in the XZ plane, set at launch.
+var _perp: Vector3 = Vector3(1, 0, 0)
+## Age in seconds, drives the wobble phase.
+var _age: float = 0.0
+
 func _ready() -> void:
 	hide()
 	set_process(false)
@@ -23,6 +32,8 @@ func _ready() -> void:
 func launch(from: Vector3, direction: Vector3) -> void:
 	global_position = from
 	dir = direction.normalized()
+	_perp = Vector3(-dir.z, 0.0, dir.x).normalized()
+	_age = 0.0
 	_life = LIFETIME
 	show()
 	set_process(true)
@@ -33,7 +44,10 @@ func deactivate() -> void:
 	set_process(false)
 
 func _process(delta: float) -> void:
+	_age += delta
 	position += dir * SPEED * delta
+	# Small lateral wobble (pseudo-3D rocket shake), amplitude ~ WOBBLE_AMP/WOBBLE_FREQ.
+	position += _perp * sin(_age * WOBBLE_FREQ) * WOBBLE_AMP * delta
 	_life -= delta
 	if _life <= 0.0 or position.z < -25.0 or position.z > 25.0 or absf(position.x) > 20.0:
 		deactivate()
