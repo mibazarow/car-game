@@ -1,7 +1,8 @@
 extends Area3D
 class_name Rocket
 ## A straight-flying projectile. Launched from the player toward the fleeing
-## enemy: destroying the enemy is a win, hitting civilian traffic is a crash.
+## enemy: destroying the enemy is a win. Clipping civilian traffic just wastes
+## the rocket (no crash); only driving into traffic ends the run.
 ## Top-down view: +Y is up, flight toward -Z (forward).
 
 ## Flight direction (normalized at launch).
@@ -53,9 +54,10 @@ func _process(delta: float) -> void:
 		deactivate()
 
 func _on_area_entered(area: Area3D) -> void:
-	if area is TrafficCar:
-		GameState.game_over()
-		deactivate()
-	elif area is FleeingCar:
+	if area is FleeingCar:
 		GameState.win()
+		deactivate()
+	elif area is TrafficCar:
+		# A rocket that clips civilian traffic is a wasted shot, not a crash.
+		# Only driving into traffic is a game over.
 		deactivate()
