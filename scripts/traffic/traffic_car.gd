@@ -11,8 +11,6 @@ class_name TrafficCar
 const SPAWN_Z: float = -25.0
 # Past this Z the car has passed the player and is recycled.
 const RECYCLE_Z: float = 18.0
-# Sentinel for "no car ahead yet" (very negative Z).
-const NEG_INF := -3.4028235e38
 # Minimum gap kept behind the car ahead when it is held at the danger zone.
 const FOLLOW_GAP := 1.5
 # Small margin so a held car sits just ABOVE the threat band (not inside it).
@@ -105,11 +103,15 @@ func _physics_process(delta: float) -> void:
 
 	var next_z: float = position.z + speed_z * delta
 	# Never drive past the car directly ahead in this lane: if it is held at the
-	# danger zone, stop at a small gap behind its tail instead of overlapping.
+	# danger zone, stop at a small gap behind its tail. NEVER jump backward
+	# (that is what made cars teleport away and "disappear").
 	var ahead := _car_ahead()
 	if ahead != null:
 		var max_z: float = ahead.position.z - (_half_z + ahead._half_z) - FOLLOW_GAP
-		next_z = minf(next_z, max_z)
+		if max_z < position.z:
+			next_z = position.z
+		else:
+			next_z = minf(next_z, max_z)
 	# Anti-checkmate: a car about to enter the player's danger zone holds just
 	# above it if the zone is already full or the car would sit next to (adjacent
 	# lane) a car already in the zone. This prevents two cars in adjacent lanes
@@ -126,19 +128,21 @@ func _physics_process(delta: float) -> void:
 		deactivate()
 		recycled.emit(self)
 
-## Nearest active car ahead (smaller Z) in this same lane, or null.
+## Nearest active car directly ahead in this lane (further along the road toward
+## the player = larger Z), or null. Cars travel toward +Z, so "ahead" is the
+## next car with a LARGER Z.
 func _car_ahead() -> TrafficCar:
 	var nearest: TrafficCar = null
-	var nearest_z := NEG_INF
+	var nearest_z := INF
 	for node in get_tree().get_nodes_in_group("traffic"):
 		var c := node as TrafficCar
 		if c == null or not c.active or c == self:
 			continue
 		if c.lane != lane:
 			continue
-		if c.position.z >= position.z:
+		if c.position.z <= position.z:
 			continue
-		if c.position.z > nearest_z:
+		if c.position.z < nearest_z:
 			nearest = c
 			nearest_z = c.position.z
 	return nearest
