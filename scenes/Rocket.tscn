@@ -1,14 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://r0ck3t1n2p1c0k"]
 
 [ext_resource type="Script" path="res://scripts/rocket.gd" id="1_rocket"]
-
-[sub_resource type="CylinderMesh" id="Mesh_rocket"]
-radius = 0.25
-height = 1.0
-
-[sub_resource type="StandardMaterial3D" id="Mat_red"]
-shading_mode = 0
-albedo_color = Color(0.95, 0.15, 0.1, 1)
+[ext_resource type="Texture2D" path="res://assets/missle.png" id="2_tex"]
 
 [sub_resource type="CylinderShape3D" id="Shape_rocket"]
 radius = 0.4
@@ -20,11 +13,12 @@ collision_layer = 16
 collision_mask = 6
 monitoring = true
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.5, 0)
-mesh = SubResource("Mesh_rocket")
-surface_material_override/0 = SubResource("Mat_red")
+[node name="Sprite" type="Sprite3D" parent="."]
+texture = ExtResource("2_tex")
+pixel_size = 0.001213
+position = Vector3(0, 0.05, 0)
+rotation = Vector3(1.5708, 3.14159, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.5, 0)
+position = Vector3(0, 0.25, 0)
 shape = SubResource("Shape_rocket")

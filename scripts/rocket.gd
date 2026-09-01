@@ -7,7 +7,7 @@ class_name Rocket
 ## Flight direction (normalized at launch).
 var dir: Vector3 = Vector3(0, 0, -1)
 ## How fast the rocket travels (world units / second).
-const SPEED: float = 40.0
+const SPEED: float = 28.0
 ## Seconds before the rocket disappears on its own.
 const LIFETIME: float = 3.0
 
