@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patrol Rush</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <div id="frame">
+      <canvas id="game" width="540" height="960"></canvas>
+
+      <!-- HUD -->
+      <div id="hud" class="layer">
+        <div id="hud-left">
+          <span id="score">Score: 0</span>
+          <span class="sep">·</span>
+          <span id="best">Best: 0</span>
+        </div>
+        <div id="hud-right">
+          <span id="ind-nitro" class="dot nitro" title="нитро"></span>
+          <span id="ind-rocket" class="dot rocket" title="ракета"></span>
+        </div>
+      </div>
+
+      <!-- Menu -->
+      <div id="menu" class="layer screen">
+        <h1 class="title">PATROL&nbsp;RUSH</h1>
+        <p class="subtitle">полицейская погоня</p>
+        <p id="menu-best" class="menu-best"></p>
+        <button id="btn-play" class="btn primary">ИГРАТЬ</button>
+        <p class="hint">Enter — старт · ←/→ или A/D — полосы</p>
+      </div>
+
+      <!-- Pause -->
+      <div id="paused" class="layer screen hidden">
+        <h2 class="p-title">ПАУЗА</h2>
+        <button id="btn-resume" class="btn primary">ПРОДОЛЖИТЬ</button>
+        <button id="btn-restart-p" class="btn">ЗАНОВО</button>
+      </div>
+
+      <!-- Game over / win -->
+      <div id="over" class="layer screen hidden">
+        <h2 id="over-title" class="o-title">GAME OVER</h2>
+        <p id="over-score" class="o-line"></p>
+        <p id="over-best" class="o-line"></p>
+        <button id="btn-restart" class="btn primary">ЗАНОВО</button>
+        <button id="btn-menu" class="btn">МЕНЮ</button>
+        <p class="hint">Enter / R — заново</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
