@@ -41,10 +41,10 @@
   const DANGER_TOP = 620, DANGER_BOT = 905;
 
   // ---------- tuning ----------
-  const BASE_SPEED = 235, SPEED_CAP = 430, SPEED_PER_LEVEL = 24, LEVEL_EVERY = 20;
+  const BASE_SPEED = 205, SPEED_CAP = 390, SPEED_PER_LEVEL = 20, LEVEL_EVERY = 20;
   const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_TIME = 2.0, NITRO_BOOST = 1.3;
   const ROCKET_SPEED = 800;
-  const SPAWN_EVERY = 0.62, MAX_PER_LANE = 2, SPAWN_GAP = 200;
+  const SPAWN_EVERY = 0.78, MAX_PER_LANE = 2, SPAWN_GAP = 200;
 
   // ---------- assets / mapping ----------
   const POLICE_FILE = "police_topdown.png";
@@ -262,9 +262,10 @@
       const ahead = traffic.find((o) => o !== c && o.lane === c.lane && o.y > c.y);
       if (ahead) { const maxY = ahead.y - (c.hl + ahead.hl) - 14; if (nextY > maxY) nextY = maxY; }
       if (c.y < DANGER_TOP && nextY >= DANGER_TOP) {
+        // Anti-wall: at most ONE car near the player row at a time, so there is
+        // always a free lane to dodge into (no side-by-side/stacked wall).
         const band = traffic.filter((o) => o !== c && o.y >= DANGER_TOP && o.y <= DANGER_BOT);
-        const adj = band.some((o) => Math.abs(o.lane - c.lane) === 1);
-        if (band.length >= 2 || adj) nextY = DANGER_TOP - 1;
+        if (band.length >= 1) nextY = DANGER_TOP - 1;
       }
       c.y = Math.max(nextY, c.y);
       if (c.y - c.hl > PLAYER_Y + 24 && !c.counted) { c.counted = true; addScore(); }
