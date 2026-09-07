@@ -230,11 +230,20 @@
 
   // ---------- traffic ----------
   let spawnAcc = 0;
+  let lastTraffic = null;      // avoid the same model twice in a row
+  const TRUCK_CHANCE = 0.13;   // fraction of spawns that are trucks
   function trafficChoice() {
     const cars = CAR_FILES.filter((f) => f !== G.enemyFile); // exclude this run's enemy
-    return Math.random() < 0.35
-      ? TRUCK_FILES[(Math.random() * TRUCK_FILES.length) | 0]
-      : cars[(Math.random() * cars.length) | 0];
+    for (let t = 0; t < 3; t++) {
+      const truck = Math.random() < TRUCK_CHANCE;
+      const f = truck
+        ? TRUCK_FILES[(Math.random() * TRUCK_FILES.length) | 0]
+        : cars[(Math.random() * cars.length) | 0];
+      if (f !== lastTraffic) { lastTraffic = f; return f; }
+    }
+    const truck = Math.random() < TRUCK_CHANCE;
+    return truck ? TRUCK_FILES[(Math.random() * TRUCK_FILES.length) | 0]
+                 : cars[(Math.random() * cars.length) | 0];
   }
   function trySpawn(dt) {
     spawnAcc += dt;
