@@ -41,10 +41,10 @@
   const DANGER_TOP = 620, DANGER_BOT = 905;
 
   // ---------- tuning ----------
-  const BASE_SPEED = 250, SPEED_CAP = 450, SPEED_PER_LEVEL = 26, LEVEL_EVERY = 20;
+  const BASE_SPEED = 235, SPEED_CAP = 430, SPEED_PER_LEVEL = 24, LEVEL_EVERY = 20;
   const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_TIME = 2.0, NITRO_BOOST = 1.3;
   const ROCKET_SPEED = 800;
-  const SPAWN_EVERY = 0.45, MAX_PER_LANE = 2, SPAWN_GAP = 170;
+  const SPAWN_EVERY = 0.62, MAX_PER_LANE = 2, SPAWN_GAP = 200;
 
   // ---------- assets / mapping ----------
   const POLICE_FILE = "police_topdown.png";
@@ -79,6 +79,7 @@
 
   // ---------- image loading ----------
   const IMG = {};
+  let asphalt = null;   // road texture tile (optional)
   const LOAD_FILES = [POLICE_FILE, NITRO_FILE, ROCKET_FILE].concat(CAR_FILES, TRUCK_FILES);
   function loadImage(src) {
     return new Promise((res, rej) => {
@@ -129,7 +130,7 @@
     return {
       lane, file, img, x, y, vy, down, rw,
       hw: rw * 0.44, hl: h * 0.49,   // hitbox derived from PNG
-      curX: x, targetX: x, bank: 0, yaw: 0, surge: 0,
+      curX: x, targetX: x, bank: 0, yaw: 0, turn: 0, surge: 0,
       counted: false, timer: 0,
     };
   }
@@ -337,9 +338,7 @@
 
   // ---------- player ----------
   function movePlayer(dt) {
-    if (wantLeft) player.targetX = LANE_X[Math.max(0, player.lane - 1)];
-    if (wantRight) player.targetX = LANE_X[Math.min(3, player.lane + 1)];
-    player.lane = closestLane(player.targetX);
+    player.targetX = LANE_X[player.lane];
 
     if (wantNitro && G.nitroReady) { G.nitroReady = false; G.nitroTime = NITRO_TIME; playNitro(); ui.indNitro.classList.remove("on"); }
     wantNitro = false;
@@ -351,8 +350,9 @@
     player.curX = lerp(player.curX, player.targetX, 1 - Math.exp(-11 * dt));
     player.x = player.curX;
     const latV = (player.x - oldX) / Math.max(dt, 1e-4);
-    player.bank = clamp(-latV * 0.0009, -0.16, 0.16);
-    player.yaw = clamp(latV * 0.00055, -0.5, 0.5);
+    // Smooth, readable nose turn into the lane change (no harsh wobble).
+    const turnTarget = clamp(latV * 0.0007, -0.3, 0.3);
+    player.turn = lerp(player.turn, turnTarget, 1 - Math.exp(-8 * dt));
     player.surge = lerp(player.surge, G.nitroTime > 0 ? -50 : 0, 1 - Math.exp(-2.5 * dt));
 
     for (const c of traffic) {
@@ -362,15 +362,17 @@
   }
 
   // ---------- input ----------
-  let wantLeft = false, wantRight = false, wantFire = false, wantNitro = false;
+  // Discrete lane change: one press = one lane. Auto-repeat is ignored so
+  // holding a key can't skip two lanes at once.
+  let wantFire = false, wantNitro = false;
   function down(e) {
     unlockAudio();
     const k = e.code;
     if (["ArrowLeft", "ArrowRight", "Space", "Enter"].includes(k)) e.preventDefault();
     if (G.state === "menu") { if (k === "Enter" || k === "Space") startGame(); return; }
     if (G.state === "playing") {
-      if (k === "ArrowLeft" || k === "KeyA") wantLeft = true;
-      else if (k === "ArrowRight" || k === "KeyD") wantRight = true;
+      if ((k === "ArrowLeft" || k === "KeyA") && !e.repeat) player.lane = Math.max(0, player.lane - 1);
+      else if ((k === "ArrowRight" || k === "KeyD") && !e.repeat) player.lane = Math.min(3, player.lane + 1);
       else if (k === "Space") wantNitro = true;
       else if (k === "Enter") wantFire = true;
       else if (k === "KeyP" || k === "Escape") pauseGame();
@@ -383,9 +385,7 @@
   }
   function up(e) {
     const k = e.code;
-    if (k === "ArrowLeft" || k === "KeyA") wantLeft = false;
-    else if (k === "ArrowRight" || k === "KeyD") wantRight = false;
-    else if (k === "Space") wantNitro = false;
+    if (k === "Space") wantNitro = false;
     else if (k === "Enter") wantFire = false;
   }
   window.addEventListener("keydown", down);
@@ -407,17 +407,34 @@
   // ---------- drawing ----------
   function drawRoad() {
     if (G.state === "playing") { G.scroll += G.speed * (G.nitroTime > 0 ? NITRO_BOOST : 1) * dt; }
+    // grass around
     ctx.fillStyle = "#1e2f1a"; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#22361e";
     for (let x = 8; x < ROAD_L - 22; x += 26) ctx.fillRect(x, 0, 9, H);
     for (let x = ROAD_R + 16; x < W - 10; x += 26) ctx.fillRect(x, 0, 9, H);
-    ctx.fillStyle = "#2b2b2e"; ctx.fillRect(ROAD_L, 0, ROAD_W, H);
-    ctx.fillStyle = "rgba(0,0,0,0.10)";
-    const band = 130, bk = G.scroll % band;
-    for (let y = bk - band; y < H + band; y += band) ctx.fillRect(ROAD_L, y, ROAD_W, 24);
+
+    // asphalt: tiled texture, ~15 tiles across the road, filled via repeat
+    if (asphalt) {
+      const aspect = asphalt.height / asphalt.width;
+      const tw = ROAD_W / 15;              // ~15 tiles per line
+      const th = tw * aspect;
+      const off = (G.scroll) % th;         // scrolls downward
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ROAD_L - 1, -1, ROAD_W + 2, H + 2); ctx.clip();
+      for (let y = off - th; y < H + th; y += th)
+        for (let x = ROAD_L; x <= ROAD_R; x += tw)
+          ctx.drawImage(asphalt, x, y, tw + 1, th + 1); // +1 to hide seams
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#3a3a3d"; ctx.fillRect(ROAD_L, 0, ROAD_W, H);
+    }
+
+    // dashed lane dividers
     ctx.fillStyle = "rgba(255,255,255,0.8)";
-    const period = 110, len = 46, off = G.scroll % period;
-    for (const dx of DIVIDERS) for (let y = off - period; y < H + period; y += period) ctx.fillRect(dx - 1.5, y, 3, len);
+    const period = 110, len = 46, off2 = (G.scroll) % period;
+    for (const dx of DIVIDERS) for (let y = off2 - period; y < H + period; y += period) ctx.fillRect(dx - 1.5, y, 3, len);
+
+    // yellow edge lines
     ctx.fillStyle = "#cfb520";
     ctx.fillRect(ROAD_L - 2, 0, 3, H);
     ctx.fillRect(ROAD_R - 1, 0, 3, H);
@@ -458,7 +475,7 @@
         ctx.globalAlpha = 0.5; ctx.fillStyle = "#ffd23f";
         ctx.beginPath(); ctx.arc(0, 26, 18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       }
-      ctx.rotate(player.bank + player.yaw);
+      ctx.rotate(player.turn);
       ctx.drawImage(player.img, -player.rw / 2, -h / 2, player.rw, h);
       ctx.restore();
     }
@@ -517,6 +534,7 @@
   // ---------- boot ----------
   async function boot() {
     for (const f of LOAD_FILES) { try { IMG[f] = await loadImage("assets/" + f); } catch (e) { console.warn("no image", f); } }
+    try { asphalt = await loadImage("assets/asphalt.png"); } catch (e) { console.warn("no asphalt"); }
     setupAudio();
     fit();
     goMenu();
