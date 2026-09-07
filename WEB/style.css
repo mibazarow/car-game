@@ -78,6 +78,32 @@ html, body {
 .o-line { font-size: 18px; }
 .hint { color: #8a93a6; font-size: 12px; }
 
+.howto {
+  width: 78%;
+  margin: 4px 0 6px;
+  text-align: left;
+  color: #dbe2ef;
+  font-size: 15px;
+  line-height: 1.55;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.howto-l { margin: 4px 0; }
+.k {
+  display: inline-block;
+  background: #2a3346;
+  border: 1px solid #4a5870;
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0 6px;
+  font-weight: 700;
+  font-size: 12px;
+  color: #ffd23f;
+}
+.win { color: #ffd23f; font-weight: 800; letter-spacing: 1px; }
+
 .btn {
   min-width: 210px;
   padding: 13px 26px;
