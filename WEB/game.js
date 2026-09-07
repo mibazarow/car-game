@@ -41,7 +41,7 @@
   const DANGER_TOP = 620, DANGER_BOT = 905;
 
   // ---------- tuning ----------
-  const BASE_SPEED = 175, SPEED_ACCEL = 3.6, SPEED_CAP = 430;
+  const BASE_SPEED = 175, SPEED_ACCEL = 4.5, SPEED_CAP = 430;
   const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_DUR = 1.6, NITRO_STRENGTH = 2.0;
   const ROCKET_SPEED = 800;
   const SPAWN_EVERY = 0.78, MAX_PER_LANE = 2, SPAWN_GAP = 200;
