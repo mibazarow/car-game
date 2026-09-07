@@ -41,7 +41,7 @@
   const DANGER_TOP = 620, DANGER_BOT = 905;
 
   // ---------- tuning ----------
-  const BASE_SPEED = 205, SPEED_CAP = 390, SPEED_PER_LEVEL = 20, LEVEL_EVERY = 20;
+  const BASE_SPEED = 200, SPEED_CAP = 400, SPEED_PER_LEVEL = 14, LEVEL_EVERY = 15, SPEED_RAMP = 0.6;
   const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_TIME = 2.0, NITRO_BOOST = 1.3;
   const ROCKET_SPEED = 800;
   const SPAWN_EVERY = 0.78, MAX_PER_LANE = 2, SPAWN_GAP = 200;
@@ -65,7 +65,7 @@
   // ---------- state ----------
   const G = {
     state: "loading", win: false,
-    speed: BASE_SPEED, scroll: 0, score: 0,
+    speed: BASE_SPEED, speedTarget: BASE_SPEED, scroll: 0, score: 0,
     best: +(localStorage.getItem("patrol_best") || 0),
     level: 0, passed: 0, rocketArmed: false, rocketPassed: 0,
     nitroReady: false, nitroTime: 0, rocketReady: false,
@@ -154,7 +154,7 @@
 
   function startGame() {
     G.win = false;
-    G.score = 0; G.speed = BASE_SPEED; G.level = 0; G.scroll = 0;
+    G.score = 0; G.speed = BASE_SPEED; G.speedTarget = BASE_SPEED; G.level = 0; G.scroll = 0;
     G.passed = 0; G.rocketArmed = false; G.rocketPassed = 0;
     G.nitroReady = false; G.nitroTime = 0; G.rocketReady = false;
     G.nitroActive = null; G.rocketActive = null;
@@ -195,7 +195,10 @@
     G.score++;
     ui.score.textContent = "Score: " + G.score;
     const lvl = Math.floor(G.score / LEVEL_EVERY);
-    if (lvl > G.level) { G.level = lvl; G.speed = Math.min(G.speed + SPEED_PER_LEVEL, SPEED_CAP); }
+    if (lvl > G.level) {
+      G.level = lvl;
+      G.speedTarget = Math.min(G.speedTarget + SPEED_PER_LEVEL, SPEED_CAP); // smooth toward this later
+    }
     G.passed++;
     if (G.passed >= NITRO_EVERY) { G.passed = 0; spawnPickup("nitro"); G.rocketArmed = true; G.rocketPassed = 0; }
     else if (G.rocketArmed) { G.rocketPassed++; if (G.rocketPassed >= ROCKET_AFTER) { G.rocketArmed = false; spawnPickup("rocket"); } }
@@ -519,6 +522,9 @@
     last = now || 0;
     G.t += dt;
     if (G.state === "playing") {
+      // Smooth, predictable difficulty: actual speed eases toward the target
+      // (no abrupt jumps), so it feels like a steady, growing ramp.
+      G.speed = lerp(G.speed, G.speedTarget, 1 - Math.exp(-SPEED_RAMP * dt));
       movePlayer(dt);
       if (G.state === "playing") {
         trySpawn(dt);
