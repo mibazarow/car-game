@@ -91,6 +91,14 @@ html, body {
   padding: 12px 14px;
 }
 .howto-l { margin: 4px 0; }
+.howto-h {
+  margin: 0 0 6px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #ffd23f;
+  text-transform: uppercase;
+}
 .k {
   display: inline-block;
   background: #2a3346;
