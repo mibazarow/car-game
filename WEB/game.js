@@ -3,16 +3,25 @@
    Faithful adaptation of the Godot original: 4-lane top-down police
    chase, traffic, nitro, rockets, win by hitting the fleeing car.
    Self-contained: drop this folder on any static host / iframe.
+
+   ASSET RULES (see WEB/README.md):
+   - Sprites are supplied ALREADY ORIENTED; the code never flips/rotates
+     cars manually.
+   - Hitbox of each vehicle is derived from its PNG size: all cars share a
+     lane-fitting width, but length comes from the PNG aspect (a truck is
+     longer -> its hitbox is longer), so a small car's hitbox can never be
+     applied to a truck's rear.
+   - Player = police_topdown.png (fixed). The fleeing enemy is a RANDOM
+     passenger car each run (never a truck), and that car is excluded from
+     traffic for that run.
    ===================================================================== */
 "use strict";
 
 (function () {
-  // ---------- canvas ----------
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
 
-  // ---------- DOM refs ----------
   const el = (id) => document.getElementById(id);
   const ui = {
     score: el("score"), best: el("best"),
@@ -32,54 +41,45 @@
   const DANGER_TOP = 620, DANGER_BOT = 905;
 
   // ---------- tuning ----------
-  const BASE_SPEED = 250;
-  const SPEED_CAP = 450;
-  const SPEED_PER_LEVEL = 26;
-  const LEVEL_EVERY = 20;
-  const NITRO_EVERY = 15;
-  const ROCKET_AFTER = 4;
-  const NITRO_TIME = 2.0;
-  const NITRO_BOOST = 1.3;
+  const BASE_SPEED = 250, SPEED_CAP = 450, SPEED_PER_LEVEL = 26, LEVEL_EVERY = 20;
+  const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_TIME = 2.0, NITRO_BOOST = 1.3;
   const ROCKET_SPEED = 800;
-  const SPAWN_EVERY = 0.45;
-  const MAX_PER_LANE = 2;
-  const SPAWN_GAP = 170;
+  const SPAWN_EVERY = 0.45, MAX_PER_LANE = 2, SPAWN_GAP = 170;
 
-  const SIZE = {
-    police: { w: 58, hw: 27, hl: 58 },
-    sedan: { w: 56, hw: 26, hl: 55 },
-    truck: { w: 76, hw: 38, hl: 105 },
+  // ---------- assets / mapping ----------
+  const POLICE_FILE = "police_topdown.png";
+  const CAR_FILES = ["car_blue_sedan.png", "car_yellow_compact.png", "car_red_sports.png", "car_black_suv.png"];
+  const TRUCK_FILES = ["truck_topdown.png", "truck2_topdown.png"];
+  const NITRO_FILE = "nitro.png";
+  const ROCKET_FILE = "rocket.png";
+
+  // render width (px) per sprite so all fit a lane; length comes from aspect
+  const FILE_W = {
+    "police_topdown.png": 60,
+    "car_blue_sedan.png": 56, "car_yellow_compact.png": 56,
+    "car_red_sports.png": 56, "car_black_suv.png": 62,
+    "truck_topdown.png": 86, "truck2_topdown.png": 86,
   };
-  const SEDAN_IMGS = ["car_blue.png", "car_yellow.png", "car_green.png"];
-  const TRUCK_IMGS = ["truck_red.png", "truck_white.png"];
-  const FORWARD = { sedan: [60, 150], truck: [15, 60] };
+  const TRUCK_FWD = [15, 60], CAR_FWD = [60, 150];
 
   // ---------- state ----------
   const G = {
-    state: "loading",
-    win: false,
-    speed: BASE_SPEED,
-    scroll: 0,
-    score: 0,
+    state: "loading", win: false,
+    speed: BASE_SPEED, scroll: 0, score: 0,
     best: +(localStorage.getItem("patrol_best") || 0),
-    level: 0,
-    passed: 0,
-    rocketArmed: false,
-    rocketPassed: 0,
-    nitroReady: false,
-    nitroTime: 0,
-    rocketReady: false,
-    nitroActive: null,
-    rocketActive: null,
-    t: 0,
+    level: 0, passed: 0, rocketArmed: false, rocketPassed: 0,
+    nitroReady: false, nitroTime: 0, rocketReady: false,
+    nitroActive: null, rocketActive: null,
+    enemyFile: CAR_FILES[0], t: 0,
   };
 
   // ---------- entities ----------
   let player = null, enemy = null;
   const traffic = [], rockets = [], pickups = [], parts = [], trails = [];
 
-  // ---------- assets ----------
+  // ---------- image loading ----------
   const IMG = {};
+  const LOAD_FILES = [POLICE_FILE, NITRO_FILE, ROCKET_FILE].concat(CAR_FILES, TRUCK_FILES);
   function loadImage(src) {
     return new Promise((res, rej) => {
       const i = new Image();
@@ -88,11 +88,8 @@
       i.src = src;
     });
   }
-  const IMAGE_FILES = [
-    "car_police.png", "car_beige.png", "car_blue.png", "car_yellow.png",
-    "car_green.png", "truck_red.png", "truck_white.png", "NITRO.png", "missle.png",
-  ];
 
+  // ---------- audio ----------
   const AUDIO = { ctx: null, engine: null };
   function setupAudio() {
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -100,50 +97,48 @@
     const eng = new Audio("assets/toyota-supra-turbo-car.mp3");
     eng.loop = true; eng.volume = 0.32; AUDIO.engine = eng;
   }
-  function unlockAudio() {
-    if (AUDIO.ctx && AUDIO.ctx.state === "suspended") AUDIO.ctx.resume();
-  }
+  function unlockAudio() { if (AUDIO.ctx && AUDIO.ctx.state === "suspended") AUDIO.ctx.resume(); }
   function playNitro() {
     if (!AUDIO.ctx) return;
     const req = new XMLHttpRequest();
-    req.open("GET", "assets/nitro.wav", true);
-    req.responseType = "arraybuffer";
-    req.onload = () => {
-      AUDIO.ctx.decodeAudioData(req.response, (buf) => {
-        const s = AUDIO.ctx.createBufferSource();
-        s.buffer = buf;
-        const g = AUDIO.ctx.createGain(); g.gain.value = 0.5;
-        s.connect(g); g.connect(AUDIO.ctx.destination); s.start();
-      }, () => {});
-    };
+    req.open("GET", "assets/nitro.wav", true); req.responseType = "arraybuffer";
+    req.onload = () => AUDIO.ctx.decodeAudioData(req.response, (buf) => {
+      const s = AUDIO.ctx.createBufferSource(); s.buffer = buf;
+      const g = AUDIO.ctx.createGain(); g.gain.value = 0.5;
+      s.connect(g); g.connect(AUDIO.ctx.destination); s.start();
+    }, () => {});
     req.send();
   }
 
   // ---------- helpers ----------
-  function rand(a, b) { return a + Math.random() * (b - a); }
-  function lerp(a, b, t) { return a + (b - a) * t; }
-  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
   function closestLane(x) {
     let bi = 0, bd = 1e9;
-    for (let i = 0; i < LANE_X.length; i++) {
-      const d = Math.abs(LANE_X[i] - x);
-      if (d < bd) { bd = d; bi = i; }
-    }
+    for (let i = 0; i < LANE_X.length; i++) { const d = Math.abs(LANE_X[i] - x); if (d < bd) { bd = d; bi = i; } }
     return bi;
   }
 
-  // ---------- car factory ----------
-  function makeCar(lane, kind, imgKey, x, y, vy, down) {
-    const s = SIZE[kind];
+  // ---------- vehicle factory (hitbox from PNG size) ----------
+  function vehicle(lane, file, x, y, vy, down) {
+    const img = IMG[file];
+    const rw = FILE_W[file] || 56;
+    const aspect = img ? img.height / img.width : 2;
+    const h = rw * aspect;
     return {
-      lane, kind, img: IMG[imgKey] || null,
-      x, y, vy, down,
-      hw: s.hw, hl: s.hl,
-      curX: x, targetX: x, bank: 0, yaw: 0, surge: 0, counted: false, timer: 0,
+      lane, file, img, x, y, vy, down, rw,
+      hw: rw * 0.44, hl: h * 0.49,   // hitbox derived from PNG
+      curX: x, targetX: x, bank: 0, yaw: 0, surge: 0,
+      counted: false, timer: 0,
     };
   }
+  function aspectOf(file) {
+    const img = IMG[file];
+    return img ? img.height / img.width : 2;
+  }
 
-  // ---------- state / screens ----------
+  // ---------- screens / state ----------
   function setState(s) {
     G.state = s;
     ui.menu.classList.toggle("hidden", s !== "menu");
@@ -164,8 +159,11 @@
     G.nitroActive = null; G.rocketActive = null;
     traffic.length = 0; rockets.length = 0; pickups.length = 0; parts.length = 0; trails.length = 0;
 
-    player = makeCar(1, "police", "car_police.png", LANE_X[1], PLAYER_Y, 0, false);
-    enemy = makeCar(1, "sedan", "car_beige.png", LANE_X[1], ENEMY_Y, 0, false);
+    // random enemy this run (a passenger car, never a truck)
+    G.enemyFile = CAR_FILES[(Math.random() * CAR_FILES.length) | 0];
+
+    player = vehicle(1, POLICE_FILE, LANE_X[1], PLAYER_Y, 0, false);
+    enemy = vehicle(1, G.enemyFile, LANE_X[1], ENEMY_Y, 0, false);
     enemy.lane = 1; enemy.timer = rand(0.5, 1.4);
     ui.score.textContent = "Score: 0";
     setState("playing");
@@ -191,33 +189,27 @@
     setState("over");
   }
 
-  // ---------- score / item economy ----------
+  // ---------- score / economy ----------
   function addScore() {
     G.score++;
     ui.score.textContent = "Score: " + G.score;
     const lvl = Math.floor(G.score / LEVEL_EVERY);
     if (lvl > G.level) { G.level = lvl; G.speed = Math.min(G.speed + SPEED_PER_LEVEL, SPEED_CAP); }
     G.passed++;
-    if (G.passed >= NITRO_EVERY) {
-      G.passed = 0;
-      spawnPickup("nitro");
-      G.rocketArmed = true; G.rocketPassed = 0;
-    } else if (G.rocketArmed) {
-      G.rocketPassed++;
-      if (G.rocketPassed >= ROCKET_AFTER) { G.rocketArmed = false; spawnPickup("rocket"); }
-    }
+    if (G.passed >= NITRO_EVERY) { G.passed = 0; spawnPickup("nitro"); G.rocketArmed = true; G.rocketPassed = 0; }
+    else if (G.rocketArmed) { G.rocketPassed++; if (G.rocketPassed >= ROCKET_AFTER) { G.rocketArmed = false; spawnPickup("rocket"); } }
   }
 
   function spawnPickup(kind) {
     const lane = (Math.random() * 4) | 0;
     if (kind === "nitro") {
       if (G.nitroActive) return;
-      const p = { kind, lane, x: LANE_X[lane], y: -90, img: IMG["NITRO.png"] };
-      pickups.push(p); G.nitroActive = p;
+      pickups.push({ kind, lane, x: LANE_X[lane], y: -90, file: NITRO_FILE, img: IMG[NITRO_FILE] });
+      G.nitroActive = pickups[pickups.length - 1];
     } else {
       if (G.rocketActive) return;
-      const p = { kind, lane, x: LANE_X[lane], y: -90, img: IMG["missle.png"] };
-      pickups.push(p); G.rocketActive = p;
+      pickups.push({ kind, lane, x: LANE_X[lane], y: -90, file: ROCKET_FILE, img: IMG[ROCKET_FILE] });
+      G.rocketActive = pickups[pickups.length - 1];
     }
   }
 
@@ -225,8 +217,7 @@
   function boom(x, y) {
     const cols = ["#fff2a0", "#ffb347", "#ff6a3d", "#ff2e2e", "#ffffff"];
     for (let i = 0; i < 80; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const sp = 50 + Math.random() * 260;
+      const a = Math.random() * Math.PI * 2, sp = 50 + Math.random() * 260;
       parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 70,
                    life: rand(0.5, 1.4), max: 1.4, size: rand(2, 7),
                    col: cols[(Math.random() * cols.length) | 0] });
@@ -235,6 +226,12 @@
 
   // ---------- traffic ----------
   let spawnAcc = 0;
+  function trafficChoice() {
+    const cars = CAR_FILES.filter((f) => f !== G.enemyFile); // exclude this run's enemy
+    return Math.random() < 0.35
+      ? TRUCK_FILES[(Math.random() * TRUCK_FILES.length) | 0]
+      : cars[(Math.random() * cars.length) | 0];
+  }
   function trySpawn(dt) {
     spawnAcc += dt;
     if (spawnAcc < SPAWN_EVERY || G.state !== "playing") return;
@@ -246,45 +243,39 @@
       let leader = null;
       for (const c of inLane) if (!leader || c.y > leader.y) leader = c;
       if (leader && leader.y < SPAWN_Y + SPAWN_GAP) continue;
-      const isTruck = Math.random() < 0.3;
-      const img = isTruck ? TRUCK_IMGS[(Math.random() * 2) | 0] : SEDAN_IMGS[(Math.random() * 3) | 0];
-      const kind = isTruck ? "truck" : "sedan";
-      const fwd = rand(FORWARD[kind][0], FORWARD[kind][1]);
+      const file = trafficChoice();
+      const isTruck = TRUCK_FILES.includes(file);
+      const fwd = rand((isTruck ? TRUCK_FWD : CAR_FWD)[0], (isTruck ? TRUCK_FWD : CAR_FWD)[1]);
       const boost = G.nitroTime > 0 ? NITRO_BOOST : 1;
       const vy = leader ? leader.vy : Math.max(30, G.speed * boost - fwd);
-      traffic.push(makeCar(lane, kind, img, LANE_X[lane], SPAWN_Y, vy, true));
+      traffic.push(vehicle(lane, file, LANE_X[lane], SPAWN_Y, vy, true));
       return;
     }
   }
 
   function moveTraffic(dt) {
-    traffic.sort((a, b) => b.y - a.y); // front-most (largest y) first
+    traffic.sort((a, b) => b.y - a.y);
     for (let i = 0; i < traffic.length; i++) {
       const c = traffic[i];
       let nextY = c.y + c.vy * dt;
       const ahead = traffic.find((o) => o !== c && o.lane === c.lane && o.y > c.y);
-      if (ahead) {
-        const maxY = ahead.y - (c.hl + ahead.hl) - 14;
-        if (nextY > maxY) nextY = maxY;
-      }
+      if (ahead) { const maxY = ahead.y - (c.hl + ahead.hl) - 14; if (nextY > maxY) nextY = maxY; }
       if (c.y < DANGER_TOP && nextY >= DANGER_TOP) {
         const band = traffic.filter((o) => o !== c && o.y >= DANGER_TOP && o.y <= DANGER_BOT);
-        const cnt = band.length;
         const adj = band.some((o) => Math.abs(o.lane - c.lane) === 1);
-        if (cnt >= 2 || adj) nextY = DANGER_TOP - 1;
+        if (band.length >= 2 || adj) nextY = DANGER_TOP - 1;
       }
       c.y = Math.max(nextY, c.y);
       if (c.y - c.hl > PLAYER_Y + 24 && !c.counted) { c.counted = true; addScore(); }
     }
-    for (let i = traffic.length - 1; i >= 0; i--) {
+    for (let i = traffic.length - 1; i >= 0; i--)
       if (traffic[i].y - traffic[i].hl > H + 80) traffic.splice(i, 1);
-    }
   }
 
   // ---------- enemy AI ----------
   function enemyBlocked(lane) {
     return traffic.some((c) => c.lane === lane &&
-      c.y > ENEMY_Y - 80 && c.y < ENEMY_Y + 150 && Math.abs(c.x - LANE_X[lane]) < 30);
+      c.y > ENEMY_Y - 80 && c.y < ENEMY_Y + 150 && Math.abs(c.x - LANE_X[lane]) < 34);
   }
   function enemyPick(avoid) {
     const free = [];
@@ -292,41 +283,32 @@
     return free.length ? free[(Math.random() * free.length) | 0] : enemy.lane;
   }
   function moveEnemy(dt) {
-    if (enemyBlocked(enemy.lane)) {
-      enemy.lane = enemyPick(true);
-      enemy.timer = rand(0.6, 1.4);
-    } else {
-      enemy.timer -= dt;
-      if (enemy.timer <= 0) { enemy.lane = enemyPick(false); enemy.timer = rand(1.2, 2.6); }
-    }
+    if (enemyBlocked(enemy.lane)) { enemy.lane = enemyPick(true); enemy.timer = rand(0.6, 1.4); }
+    else { enemy.timer -= dt; if (enemy.timer <= 0) { enemy.lane = enemyPick(false); enemy.timer = rand(1.2, 2.6); } }
     const tx = LANE_X[enemy.lane];
     enemy.curX = lerp(enemy.curX, tx, 1 - Math.exp(-7 * dt));
-    const d = tx - enemy.curX;
     enemy.x = enemy.curX;
-    enemy.bank = clamp(d * 0.01, -0.35, 0.35);
+    enemy.bank = clamp((tx - enemy.curX) * 0.01, -0.35, 0.35);
   }
 
-  // ---------- player ----------
+  // ---------- rockets ----------
   function fireRocket() {
     if (!G.rocketReady) return;
     G.rocketReady = false;
     ui.indRocket.classList.remove("on");
-    rockets.push({ x: player.x, y: player.y - 60, img: IMG["missle.png"] });
+    rockets.push({ x: player.x, y: player.y - 50, file: ROCKET_FILE, img: IMG[ROCKET_FILE] });
   }
   function moveRockets(dt) {
     for (let i = rockets.length - 1; i >= 0; i--) {
       const r = rockets[i];
-      r.y -= 800 * dt;
+      r.y -= ROCKET_SPEED * dt;
       r.x += Math.sin(G.t * 40 + i * 2) * 2;
       let dead = r.y < -160;
-      if (!dead && Math.abs(r.x - enemy.x) < 34 && Math.abs(r.y - enemy.y) < 60) {
-        endGame(true);
-        return;
-      }
+      if (!dead && Math.abs(r.x - enemy.x) < enemy.hw + 6 &&
+          Math.abs(r.y - enemy.y) < enemy.hl) { endGame(true); return; }
       if (!dead) {
-        for (const c of traffic) {
-          if (Math.abs(c.x - r.x) < c.hw + 14 && r.y > c.y - 40 && r.y < c.y + 40) { dead = true; break; }
-        }
+        for (const c of traffic)
+          if (Math.abs(c.x - r.x) < c.hw + 10 && r.y > c.y - 60 && r.y < c.y + 60) { dead = true; break; }
       }
       if (dead) rockets.splice(i, 1);
     }
@@ -337,8 +319,13 @@
     for (const p of pickups) p.y += scroll * dt;
     for (let i = pickups.length - 1; i >= 0; i--) {
       const p = pickups[i];
-      if (p.y > H + 80) { pickups.splice(i, 1); if (G.nitroActive === p) G.nitroActive = null; if (G.rocketActive === p) G.rocketActive = null; continue; }
-      if (Math.abs(p.y - PLAYER_Y) < 50 && Math.abs(p.x - player.x) < 44) {
+      if (p.y > H + 80) {
+        pickups.splice(i, 1);
+        if (G.nitroActive === p) G.nitroActive = null;
+        if (G.rocketActive === p) G.rocketActive = null;
+        continue;
+      }
+      if (Math.abs(p.y - PLAYER_Y) < 60 && Math.abs(p.x - player.x) < 46) {
         pickups.splice(i, 1);
         if (p.kind === "nitro") { G.nitroReady = true; G.nitroActive = null; }
         else { G.rocketReady = true; G.rocketActive = null; }
@@ -348,15 +335,13 @@
     ui.indRocket.classList.toggle("on", G.rocketReady);
   }
 
+  // ---------- player ----------
   function movePlayer(dt) {
     if (wantLeft) player.targetX = LANE_X[Math.max(0, player.lane - 1)];
     if (wantRight) player.targetX = LANE_X[Math.min(3, player.lane + 1)];
     player.lane = closestLane(player.targetX);
 
-    if (wantNitro && G.nitroReady) {
-      G.nitroReady = false; G.nitroTime = NITRO_TIME;
-      playNitro(); ui.indNitro.classList.remove("on");
-    }
+    if (wantNitro && G.nitroReady) { G.nitroReady = false; G.nitroTime = NITRO_TIME; playNitro(); ui.indNitro.classList.remove("on"); }
     wantNitro = false;
     if (wantFire) { fireRocket(); wantFire = false; }
 
@@ -368,16 +353,11 @@
     const latV = (player.x - oldX) / Math.max(dt, 1e-4);
     player.bank = clamp(-latV * 0.0009, -0.16, 0.16);
     player.yaw = clamp(latV * 0.00055, -0.5, 0.5);
-    player.surge = lerp(player.surge, G.nitroTime > 0 ? -46 : 0, 1 - Math.exp(-2.5 * dt));
+    player.surge = lerp(player.surge, G.nitroTime > 0 ? -50 : 0, 1 - Math.exp(-2.5 * dt));
 
-    if (G.nitroTime > 0) trails.forEach((tr) => {});
-    // crash
     for (const c of traffic) {
       if (Math.abs(c.x - player.x) < c.hw + player.hw &&
-          Math.abs((c.y) - (player.y + player.surge)) < c.hl + player.hl) {
-        endGame(false);
-        return;
-      }
+          Math.abs(c.y - (player.y + player.surge)) < c.hl + player.hl) { endGame(false); return; }
     }
   }
 
@@ -426,78 +406,69 @@
 
   // ---------- drawing ----------
   function drawRoad() {
-    if (G.state === "playing") {
-      const boost = G.nitroTime > 0 ? NITRO_BOOST : 1;
-      G.scroll += G.speed * boost * dt;
-    }
-
+    if (G.state === "playing") { G.scroll += G.speed * (G.nitroTime > 0 ? NITRO_BOOST : 1) * dt; }
     ctx.fillStyle = "#1e2f1a"; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#22361e";
     for (let x = 8; x < ROAD_L - 22; x += 26) ctx.fillRect(x, 0, 9, H);
     for (let x = ROAD_R + 16; x < W - 10; x += 26) ctx.fillRect(x, 0, 9, H);
-
     ctx.fillStyle = "#2b2b2e"; ctx.fillRect(ROAD_L, 0, ROAD_W, H);
-    // moving asphalt bands
     ctx.fillStyle = "rgba(0,0,0,0.10)";
     const band = 130, bk = G.scroll % band;
     for (let y = bk - band; y < H + band; y += band) ctx.fillRect(ROAD_L, y, ROAD_W, 24);
-
-    // dashed dividers
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     const period = 110, len = 46, off = G.scroll % period;
-    for (const dx of DIVIDERS)
-      for (let y = off - period; y < H + period; y += period) ctx.fillRect(dx - 1.5, y, 3, len);
-
-    // yellow edges
+    for (const dx of DIVIDERS) for (let y = off - period; y < H + period; y += period) ctx.fillRect(dx - 1.5, y, 3, len);
     ctx.fillStyle = "#cfb520";
     ctx.fillRect(ROAD_L - 2, 0, 3, H);
     ctx.fillRect(ROAD_R - 1, 0, 3, H);
   }
 
-  function drawCar(c, extra) {
-    if (!c.img) return;
-    const s = SIZE[c.kind];
-    const h = s.w * (c.img.height / c.img.width);
+  // draw a vehicle upright at its size (rw width, height from PNG aspect)
+  function drawVehicle(v, ang) {
+    if (!v.img) return;
+    const h = v.rw * (v.img.height / v.img.width);
     ctx.save();
-    ctx.translate(c.x, c.y);
-    const ang = (extra && extra.ang) || 0;
+    ctx.translate(v.x, v.y);
     if (ang) ctx.rotate(ang);
-    // NOTE: no manual flip/rotation here — sprites are supplied already oriented.
-    ctx.drawImage(c.img, -s.w / 2, -h / 2, s.w, h);
+    ctx.drawImage(v.img, -v.rw / 2, -h / 2, v.rw, h);
     ctx.restore();
   }
 
   function draw() {
     drawRoad();
 
+    // pickups (icons on the road, drawn to natural aspect)
     for (const p of pickups) {
       if (!p.img) continue;
-      if (p.kind === "nitro") {
-        ctx.drawImage(p.img, p.x - 22, p.y - 22, 44, 44);
-      } else {
-        const a = p.img.height / p.img.width, w = 26, h = w * a;
-        ctx.drawImage(p.img, p.x - w / 2, p.y - h / 2, w, h);
-      }
+      const a = p.img.height / p.img.width;
+      const w = p.kind === "nitro" ? 30 : 24;
+      const h = w * a;
+      ctx.drawImage(p.img, p.x - w / 2, p.y - h / 2, w, h);
     }
 
-    for (const c of traffic) drawCar(c);
-    if (enemy) drawCar(enemy, { ang: enemy.bank });
+    for (const c of traffic) drawVehicle(c, 0);
+    if (enemy) drawVehicle(enemy, enemy.bank);
+
+    // player (police)
     if (player) {
-      const s = SIZE.police;
-      const h = s.w * (player.img.height / player.img.width);
+      const h = player.rw * (player.img.height / player.img.width);
       ctx.save();
       ctx.translate(player.x, player.y + player.surge);
       if (G.nitroTime > 0) {
         ctx.globalAlpha = 0.5; ctx.fillStyle = "#ffd23f";
-        ctx.beginPath(); ctx.arc(0, 30, 20, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.beginPath(); ctx.arc(0, 26, 18, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
       }
       ctx.rotate(player.bank + player.yaw);
-      ctx.drawImage(player.img, -s.w / 2, -h / 2, s.w, h);
+      ctx.drawImage(player.img, -player.rw / 2, -h / 2, player.rw, h);
       ctx.restore();
     }
 
-    // rockets
-    for (const r of rockets) if (r.img) ctx.drawImage(r.img, r.x - 20, r.y - 44, 40, 88);
+    // rockets (projectiles)
+    for (const r of rockets) {
+      if (!r.img) continue;
+      const a = r.img.height / r.img.width, w = 28, h = w * a;
+      ctx.drawImage(r.img, r.x - w / 2, r.y - h / 2, w, h);
+    }
 
     // nitro trails
     for (let i = trails.length - 1; i >= 0; i--) {
@@ -509,7 +480,7 @@
     }
     ctx.globalAlpha = 1;
 
-    // explosion
+    // explosion particles
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
       p.life -= dt;
@@ -545,9 +516,7 @@
 
   // ---------- boot ----------
   async function boot() {
-    for (const f of IMAGE_FILES) {
-      try { IMG[f] = await loadImage("assets/" + f); } catch (e) { console.warn("no image", f); }
-    }
+    for (const f of LOAD_FILES) { try { IMG[f] = await loadImage("assets/" + f); } catch (e) { console.warn("no image", f); } }
     setupAudio();
     fit();
     goMenu();
