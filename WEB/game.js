@@ -286,19 +286,42 @@
       if (traffic[i].y - traffic[i].hl > H + 80) traffic.splice(i, 1);
   }
 
-  // ---------- enemy AI ----------
-  function enemyBlocked(lane) {
-    return traffic.some((c) => c.lane === lane &&
-      c.y > ENEMY_Y - 80 && c.y < ENEMY_Y + 150 && Math.abs(c.x - LANE_X[lane]) < 34);
+  // ---------- enemy AI (never overlaps traffic) ----------
+  // Free horizontal distance (px) from the enemy row to the nearest traffic car
+  // in a lane. 1e6 = lane empty nearby.
+  function laneClearance(lane) {
+    let best = 1e6, found = false;
+    for (const c of traffic) {
+      if (c.lane !== lane) continue;
+      const top = c.y - c.hl, bot = c.y + c.hl;
+      let d;
+      if (bot < ENEMY_Y - 24) d = ENEMY_Y - bot;        // above, approaching
+      else if (top > ENEMY_Y + 24) d = top - ENEMY_Y;   // below, already passed
+      else d = 0;                                        // overlapping the row now
+      best = Math.min(best, d); found = true;
+    }
+    return found ? best : 1e6;
   }
-  function enemyPick(avoid) {
-    const free = [];
-    for (let i = 0; i < 4; i++) { if (!(avoid && i === enemy.lane) && !enemyBlocked(i)) free.push(i); }
-    return free.length ? free[(Math.random() * free.length) | 0] : enemy.lane;
+  function bestLane() {
+    let li = 0, bv = -1;
+    for (let i = 0; i < 4; i++) { const v = laneClearance(i); if (v > bv) { bv = v; li = i; } }
+    return li;
   }
   function moveEnemy(dt) {
-    if (enemyBlocked(enemy.lane)) { enemy.lane = enemyPick(true); enemy.timer = rand(0.6, 1.4); }
-    else { enemy.timer -= dt; if (enemy.timer <= 0) { enemy.lane = enemyPick(false); enemy.timer = rand(1.2, 2.6); } }
+    const EMERGENCY = 200; // dodge when a car is within this many px (above) of the enemy row
+    if (laneClearance(enemy.lane) < EMERGENCY) {
+      enemy.lane = bestLane();
+      enemy.timer = rand(0.5, 1.2);
+    } else {
+      enemy.timer -= dt;
+      if (enemy.timer <= 0) {
+        // wander to a roomy lane different from the current one
+        const cand = [];
+        for (let i = 0; i < 4; i++) if (i !== enemy.lane && laneClearance(i) > 240) cand.push(i);
+        if (cand.length) enemy.lane = cand[(Math.random() * cand.length) | 0];
+        enemy.timer = rand(1.2, 2.6);
+      }
+    }
     const tx = LANE_X[enemy.lane];
     enemy.curX = lerp(enemy.curX, tx, 1 - Math.exp(-7 * dt));
     enemy.x = enemy.curX;
