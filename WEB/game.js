@@ -42,7 +42,7 @@
 
   // ---------- tuning ----------
   const BASE_SPEED = 200, SPEED_CAP = 400, SPEED_PER_LEVEL = 9, LEVEL_EVERY = 7, SPEED_RAMP = 0.6;
-  const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_TIME = 2.0, NITRO_BOOST = 1.3;
+  const NITRO_EVERY = 15, ROCKET_AFTER = 4, NITRO_DUR = 1.6, NITRO_STRENGTH = 2.0;
   const ROCKET_SPEED = 800;
   const SPAWN_EVERY = 0.78, MAX_PER_LANE = 2, SPAWN_GAP = 200;
 
@@ -131,12 +131,20 @@
       lane, file, img, x, y, vy, down, rw,
       hw: rw * 0.44, hl: h * 0.49,   // hitbox derived from PNG
       curX: x, targetX: x, bank: 0, yaw: 0, turn: 0, surge: 0,
-      counted: false, timer: 0,
+      fwd: 0, counted: false, timer: 0,
     };
   }
   function aspectOf(file) {
     const img = IMG[file];
     return img ? img.height / img.width : 2;
+  }
+
+  // Effective world/road scroll speed. Nitro gives a strong, smooth forward
+  // surge: peaks right after activation, then eases back to the normal speed.
+  function scrollSpeed() {
+    if (G.nitroTime <= 0) return G.speed;
+    const t = Math.min(1, G.nitroTime / NITRO_DUR);
+    return G.speed * (1 + NITRO_STRENGTH * t);
   }
 
   // ---------- screens / state ----------
@@ -259,9 +267,10 @@
       const file = trafficChoice();
       const isTruck = TRUCK_FILES.includes(file);
       const fwd = rand((isTruck ? TRUCK_FWD : CAR_FWD)[0], (isTruck ? TRUCK_FWD : CAR_FWD)[1]);
-      const boost = G.nitroTime > 0 ? NITRO_BOOST : 1;
-      const vy = leader ? leader.vy : Math.max(30, G.speed * boost - fwd);
-      traffic.push(vehicle(lane, file, LANE_X[lane], SPAWN_Y, vy, true));
+      const c = vehicle(lane, file, LANE_X[lane], SPAWN_Y, 30, true);
+      c.fwd = fwd;
+      c.vy = Math.max(30, scrollSpeed() - fwd);
+      traffic.push(c);
       return;
     }
   }
@@ -270,6 +279,9 @@
     traffic.sort((a, b) => b.y - a.y);
     for (let i = 0; i < traffic.length; i++) {
       const c = traffic[i];
+      // Difficulty is FELT: re-accelerate every traffic car as game speed grows.
+      const targetVy = Math.max(30, scrollSpeed() - (c.fwd || 0));
+      c.vy = lerp(c.vy, targetVy, 1 - Math.exp(-1.5 * dt));
       let nextY = c.y + c.vy * dt;
       const ahead = traffic.find((o) => o !== c && o.lane === c.lane && o.y > c.y);
       if (ahead) { const maxY = ahead.y - (c.hl + ahead.hl) - 14; if (nextY > maxY) nextY = maxY; }
@@ -344,15 +356,19 @@
       if (!dead && Math.abs(r.x - enemy.x) < enemy.hw + 6 &&
           Math.abs(r.y - enemy.y) < enemy.hl) { endGame(true); return; }
       if (!dead) {
-        for (const c of traffic)
-          if (Math.abs(c.x - r.x) < c.hw + 10 && r.y > c.y - 60 && r.y < c.y + 60) { dead = true; break; }
+        for (const c of traffic) {
+          if (Math.abs(c.x - r.x) < c.hw + 12 && r.y > c.y - 80 && r.y < c.y + 80) {
+            endGame(false); // rocket hit a civilian car -> crash (game over)
+            return;
+          }
+        }
       }
       if (dead) rockets.splice(i, 1);
     }
   }
 
   function movePickups(dt) {
-    const scroll = G.speed * (G.nitroTime > 0 ? NITRO_BOOST : 1);
+    const scroll = scrollSpeed();
     for (const p of pickups) p.y += scroll * dt;
     for (let i = pickups.length - 1; i >= 0; i--) {
       const p = pickups[i];
@@ -376,7 +392,7 @@
   function movePlayer(dt) {
     player.targetX = LANE_X[player.lane];
 
-    if (wantNitro && G.nitroReady) { G.nitroReady = false; G.nitroTime = NITRO_TIME; playNitro(); ui.indNitro.classList.remove("on"); }
+    if (wantNitro && G.nitroReady) { G.nitroReady = false; G.nitroTime = NITRO_DUR; playNitro(); ui.indNitro.classList.remove("on"); }
     wantNitro = false;
     if (wantFire) { fireRocket(); wantFire = false; }
 
@@ -442,7 +458,7 @@
 
   // ---------- drawing ----------
   function drawRoad() {
-    if (G.state === "playing") { G.scroll += G.speed * (G.nitroTime > 0 ? NITRO_BOOST : 1) * dt; }
+    if (G.state === "playing") { G.scroll += scrollSpeed() * dt; }
     // grass around
     ctx.fillStyle = "#1e2f1a"; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#22361e";
