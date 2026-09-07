@@ -92,13 +92,31 @@ html, body {
 }
 .howto-l { margin: 4px 0; }
 .howto-h {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-weight: 800;
   font-size: 15px;
   letter-spacing: 1px;
   color: #ffd23f;
   text-transform: uppercase;
 }
+.howto-item { display: flex; align-items: flex-start; gap: 9px; margin: 6px 0; }
+.tag {
+  flex: none;
+  margin-top: 1px;
+  min-width: 64px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #10131a;
+  border-radius: 6px;
+  padding: 3px 4px;
+}
+.tag.n { background: #f5c400; }
+.tag.r { background: #ff4d3d; color: #fff; }
+.tag.a { background: #9fd8ff; }
+.howto-l { margin: 0; }
+.howto-ctrl { margin: 8px 0 0; text-align: center; }
 .k {
   display: inline-block;
   background: #2a3346;
